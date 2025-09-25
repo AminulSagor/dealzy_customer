@@ -1,8 +1,10 @@
+import 'package:dealzy/routes/app_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'sign_up_controller.dart';
+import 'package:flutter/gestures.dart';
 
 class SignUpView extends GetView<SignUpController> {
   const SignUpView({super.key});
@@ -24,7 +26,7 @@ class SignUpView extends GetView<SignUpController> {
 
     // Controls for the overlap
     final double logoHeight = 180.h; // logo size
-    final double overlap = 56.h;     // how much it overlaps onto the card
+    final double overlap = 56.h; // how much it overlaps onto the card
 
     return Scaffold(
       backgroundColor: const Color(0xFF124A89),
@@ -53,6 +55,7 @@ class SignUpView extends GetView<SignUpController> {
                           padding: EdgeInsets.fromLTRB(16.w, 20.h, 16.w, 24.h),
                           child: Form(
                             key: controller.formKey,
+                            autovalidateMode: AutovalidateMode.onUserInteraction,
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
                               children: [
@@ -62,13 +65,14 @@ class SignUpView extends GetView<SignUpController> {
                                     children: [
                                       const TextSpan(
                                         text:
-                                        'Get a smarter, smoother shopping experience.\n',
+                                            'Get a smarter, smoother shopping experience.\n',
                                       ),
                                       TextSpan(
                                         text: 'Sign up now!',
-                                        style: theme.textTheme.titleMedium?.copyWith(
-                                          fontWeight: FontWeight.w800,
-                                        ),
+                                        style: theme.textTheme.titleMedium
+                                            ?.copyWith(
+                                              fontWeight: FontWeight.w800,
+                                            ),
                                       ),
                                     ],
                                   ),
@@ -83,73 +87,192 @@ class SignUpView extends GetView<SignUpController> {
                                 // Phone
                                 TextFormField(
                                   controller: controller.phoneCtrl,
+                                  onChanged: (_) => controller.revalidate(),
                                   keyboardType: TextInputType.phone,
                                   textInputAction: TextInputAction.next,
                                   inputFormatters: [
                                     FilteringTextInputFormatter.allow(
-                                        RegExp(r'[\d\s+\-()]')),
+                                      RegExp(r'[\d\s+\-()]'),
+                                    ),
                                     LengthLimitingTextInputFormatter(18),
                                   ],
                                   validator: controller.validatePhone,
-                                  decoration: _dec('enter your phone number'),
+                                  decoration: _dec('Enter your phone number'),
                                 ),
                                 SizedBox(height: 12.h),
+                                // Email
+                                TextFormField(
+                                  controller: controller.emailCtrl,
+                                  onChanged: (_) => controller.revalidate(),
+                                  textInputAction: TextInputAction.next,
+                                  keyboardType: TextInputType.emailAddress,
+                                  validator: controller.validateEmail,
+                                  decoration: _dec('Email address'),
+                                ),
+                                SizedBox(height: 12.h),
+
 
                                 // Username
                                 TextFormField(
                                   controller: controller.usernameCtrl,
+                                  onChanged: (_) => controller.revalidate(),
                                   textInputAction: TextInputAction.next,
                                   validator: controller.validateUsername,
-                                  decoration: _dec('username'),
+                                  decoration: _dec('Username'),
                                 ),
                                 SizedBox(height: 12.h),
 
-                                // Location dropdown
+                                // Password
                                 Obx(() {
-                                  return DropdownButtonFormField<String>(
-                                    value: controller.selectedLocation.value.isEmpty
-                                        ? 'location'
-                                        : controller.selectedLocation.value,
-                                    items: controller.locations
-                                        .map((e) => DropdownMenuItem(
-                                      value: e,
-                                      child: Text(e),
-                                    ))
-                                        .toList(),
-                                    onChanged: (v) {
-                                      controller.selectedLocation.value = v ?? '';
-                                      controller.formKey.currentState?.validate();
-                                    },
-                                    validator: controller.validateLocation,
-                                    decoration: _dec('location'),
-                                    icon: const Icon(Icons.expand_more_rounded),
+                                  final reveal = controller.showPassword.value;
+                                  return TextFormField(
+                                    controller: controller.passwordCtrl,
+                                    onChanged: (_) => controller.revalidate(),
+                                    textInputAction: TextInputAction.next,
+                                    obscureText: !reveal,
+                                    validator: controller.validatePassword,
+                                    decoration: _dec('Password').copyWith(
+                                      suffixIcon: IconButton(
+                                        icon: Icon(
+                                          reveal
+                                              ? Icons.visibility
+                                              : Icons.visibility_off,
+                                        ),
+                                        onPressed: () =>
+                                            controller.showPassword.toggle(),
+                                        tooltip: reveal
+                                            ? 'Hide password'
+                                            : 'Show password',
+                                      ),
+                                    ),
                                   );
                                 }),
+
+                                SizedBox(height: 12.h),
+
+                                // Location dropdown
+                                TextFormField(
+                                  controller: controller.locationDisplayCtrl,
+                                  readOnly: true, // not editable
+                                  enableInteractiveSelection:
+                                      false, // no selection handles
+                                  validator: controller
+                                      .validateLocationDisplay, // ensure non-empty
+                                  decoration: _dec('Detecting location…')
+                                      .copyWith(
+                                        prefixIcon: const Icon(
+                                          Icons.location_on_outlined,
+                                        ),
+                                        suffixIcon: const Icon(
+                                          Icons.lock_outline,
+                                        ), // visual hint it's locked
+                                      ),
+                                ),
+
+                                // In SignUpView build() -> inside the Column(children: [...]) just above the Confirm button:
+                                SizedBox(height: 12.h),
+
+                                // ✅ Agree to Terms & Conditions row
+                                Obx(() {
+                                  return Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.center,
+                                    children: [
+                                      Checkbox(
+                                        value: controller.agreed.value,
+                                        onChanged: (v) =>
+                                            controller.agreed.value =
+                                                v ?? false,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            4,
+                                          ),
+                                        ),
+                                        materialTapTargetSize:
+                                            MaterialTapTargetSize.shrinkWrap,
+                                      ),
+                                      Expanded(
+                                        child: GestureDetector(
+                                          onTap: () {
+                                            // Open your Terms page/route or external URL
+                                            // Example route:
+                                            // Get.toNamed(AppRoutes.terms);
+                                            // or external: launchUrlString('https://example.com/terms');
+                                          },
+                                          child: RichText(
+                                            text: TextSpan(
+                                              style: Theme.of(context)
+                                                  .textTheme
+                                                  .bodySmall
+                                                  ?.copyWith(
+                                                    color: const Color(
+                                                      0xFF2E2E2E,
+                                                    ),
+                                                    height: 1.35,
+                                                  ),
+                                              children: [
+                                                const TextSpan(
+                                                  text: 'I agree to the ',
+                                                ),
+                                                TextSpan(
+                                                  text: 'Terms & Conditions',
+                                                  style: const TextStyle(
+                                                    decoration: TextDecoration.underline,
+                                                    fontWeight: FontWeight.w700,
+                                                    color: Color(0xFF124A89), // brand color
+                                                  ),
+                                                  recognizer: TapGestureRecognizer()
+                                                    ..onTap = () {
+                                                      Get.toNamed(AppRoutes.userAgreement);
+                                                    },
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  );
+                                }),
+
                                 SizedBox(height: 18.h),
 
-                                // Confirm button
+                                // ✅ Confirm button now depends on form validity AND agreement
                                 Obx(() {
                                   final busy = controller.isBusy.value;
+                                  final canSubmit =
+                                      controller.isValid.value &&
+                                      controller.agreed.value &&
+                                      !busy;
+
                                   return SizedBox(
                                     width: 0.38.sw,
                                     height: 46.h,
                                     child: ElevatedButton(
-                                      onPressed: busy ? null : controller.submit,
+                                      onPressed: canSubmit
+                                          ? controller.submit
+                                          : null,
                                       style: ElevatedButton.styleFrom(
-                                        backgroundColor: const Color(0xFF124A89),
+                                        backgroundColor: const Color(
+                                          0xFF124A89,
+                                        ),
                                         foregroundColor: Colors.white,
-                                        disabledBackgroundColor:
-                                        const Color(0xFF124A89).withOpacity(0.45),
+                                        disabledBackgroundColor: const Color(
+                                          0xFF124A89,
+                                        ).withOpacity(0.45),
                                         disabledForegroundColor: Colors.white70,
                                         shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(14.r),
+                                          borderRadius: BorderRadius.circular(
+                                            14.r,
+                                          ),
                                         ),
                                         textStyle: const TextStyle(
                                           fontWeight: FontWeight.w700,
                                         ),
                                       ),
-                                      child:
-                                      Text(busy ? 'Please wait…' : 'confirm'),
+                                      child: Text(
+                                        busy ? 'Please wait…' : 'Confirm',
+                                      ),
                                     ),
                                   );
                                 }),
@@ -165,26 +288,26 @@ class SignUpView extends GetView<SignUpController> {
                                     Text(
                                       'If you have an account, just',
                                       textAlign: TextAlign.center,
-                                      style: theme.textTheme.bodySmall?.copyWith(
-                                        color: const Color(0xFF2E2E2E),
-                                      ),
+                                      style: theme.textTheme.bodySmall
+                                          ?.copyWith(
+                                            color: const Color(0xFF2E2E2E),
+                                          ),
                                     ),
                                     GestureDetector(
                                       onTap: () {
-                                        // Get.toNamed(AppPages.signIn);
+                                        Get.toNamed(AppRoutes.signIn);
                                       },
                                       child: Text(
                                         'Sign in now!',
                                         textAlign: TextAlign.center,
-                                        style: theme.textTheme.bodySmall?.copyWith(
-                                          fontWeight: FontWeight.w700,
-
-                                        ),
+                                        style: theme.textTheme.bodySmall
+                                            ?.copyWith(
+                                              fontWeight: FontWeight.w700,
+                                            ),
                                       ),
                                     ),
                                   ],
                                 ),
-
                               ],
                             ),
                           ),

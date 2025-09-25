@@ -1,110 +1,122 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../routes/app_routes.dart';
+import '../storage/token_storage.dart';
+import 'delete_user_service.dart';
+import 'logout_service.dart';
+import 'profile_service.dart';
+
 class AppSettingController extends GetxController {
-  final country = 'Bangladesh'.obs;
-  final language = 'English'.obs;
+  AppSettingController({
+    LogoutService? logoutService,
+    ProfileService? profileService,
+  })  : _logoutService = logoutService ?? LogoutService(),
+        _profileService = profileService ?? ProfileService();
 
-  // You can load these from a service later
-  final countries = const ['Bangladesh', 'United States', 'India', 'United Kingdom'];
-  final languages = const ['English', 'বাংলা', 'Español', 'Français'];
+  final LogoutService _logoutService;
+  final ProfileService _profileService;
 
-  void openAccountSettings() {
-    // TODO: navigate to your account/profile settings screen
-    // Get.toNamed('/profile-setting');
-    Get.snackbar('Account Settings', 'Open account settings page');
+  // Profile state
+  final profileName = ''.obs;
+  final profilePhone = ''.obs;
+  final profileImageUrl = ''.obs;
+
+  final isLoadingProfile = false.obs;
+  final profileError = RxnString();
+
+  // Logout state
+  final isLoggingOut = false.obs;
+
+  @override
+  void onInit() {
+    super.onInit();
+    _loadProfile();
   }
 
-  Future<void> pickCountry() async {
-    final selected = await _pickFromList(
-      title: 'Select Country',
-      values: countries,
-      current: country.value,
-    );
-    if (selected != null) country.value = selected;
-  }
-
-  Future<void> pickLanguage() async {
-    final selected = await _pickFromList(
-      title: 'Select Language',
-      values: languages,
-      current: language.value,
-    );
-    if (selected != null) language.value = selected;
-  }
-
-  void needHelp() {
-    // TODO: route to support/FAQ
-    Get.snackbar('Help', 'Open help & support');
-  }
-
-  Future<void> logout() async {
-    final ok = await Get.dialog<bool>(
-      AlertDialog(
-        title: const Text('Log Out'),
-        content: const Text('Are you sure you want to log out?'),
-        actions: [
-          TextButton(onPressed: () => Get.back(result: false), child: const Text('Cancel')),
-          ElevatedButton(onPressed: () => Get.back(result: true), child: const Text('Log Out')),
-        ],
-      ),
-      barrierDismissible: false,
-    );
-    if (ok == true) {
-      // TODO: perform sign-out, clear tokens, etc.
-      Get.snackbar('Logged Out', 'You have been signed out.');
-      // Get.offAllNamed('/sign-in');
+  // ------- Profile -------
+  Future<void> _loadProfile() async {
+    isLoadingProfile.value = true;
+    profileError.value = null;
+    try {
+      final p = await _profileService.getProfile();
+      profileName.value = p.name;
+      profilePhone.value = p.phone;
+      profileImageUrl.value = (p.imagePath).trim();
+    } catch (e) {
+      profileError.value = e.toString();
+    } finally {
+      isLoadingProfile.value = false;
     }
   }
 
-  /// Bottom sheet single-choice picker
-  Future<String?> _pickFromList({
-    required String title,
-    required List<String> values,
-    required String current,
-  }) async {
-    String temp = current;
-    return Get.bottomSheet<String>(
-      SafeArea(
-        top: false,
-        child: Material(
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 40, height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.black12, borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
-                const SizedBox(height: 8),
-                Flexible(
-                  child: ListView.builder(
-                    shrinkWrap: true,
-                    itemCount: values.length,
-                    itemBuilder: (_, i) {
-                      final v = values[i];
-                      return RadioListTile<String>(
-                        value: v,
-                        groupValue: temp,
-                        onChanged: (val) { temp = val!; Get.back(result: temp); },
-                        title: Text(v),
-                      );
-                    },
-                  ),
-                ),
-              ],
-            ),
+  Future<void> reloadProfile() => _loadProfile();
+
+  // ------- Delete (after confirm in view) -------
+  Future<void> deleteProfileConfirmed(BuildContext context) async {
+    try {
+      final result = await DeleteUserService.deleteUser();
+
+      if (result['status'] == 'success') {
+        // Clear token after deletion
+        await TokenStorage.clearToken();
+
+        // Navigate home
+        Get.offAllNamed(AppRoutes.home);
+
+        // Success message
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Your account has been deleted successfully.'),
+            backgroundColor: Colors.green,
           ),
+        );
+      } else {
+        // Failure message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result['message'] ?? 'Failed to delete account.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      // Error message
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Something went wrong. Please try again later.'),
+          backgroundColor: Colors.red,
         ),
-      ),
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-    );
+      );
+    }
   }
+
+  // ------- Logout (after confirm in view) -------
+  Future<void> performLogout() async {
+    if (isLoggingOut.value) return;
+    isLoggingOut.value = true;
+    try {
+      await _logoutService.logout();
+      await TokenStorage.clearToken();
+      Get.offAllNamed(AppRoutes.home);
+      Get.snackbar(
+        'Logged Out',
+        'You have been signed out.',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    } catch (e) {
+      // Even if server call fails, clear local session
+      await TokenStorage.clearToken();
+      Get.offAllNamed(AppRoutes.home);
+      Get.snackbar(
+        'Signed Out',
+        e.toString(),
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    } finally {
+      isLoggingOut.value = false;
+    }
+  }
+
+
 }

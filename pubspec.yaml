@@ -4,7 +4,7 @@ description: "A new Flutter project."
 publish_to: 'none'
 
 
-version: 1.0.0+1
+version: 1.1.7+8
 
 environment:
   sdk: ^3.9.0-333.2.beta
@@ -15,14 +15,27 @@ dependencies:
   get: ^4.6.6
   flutter_screenutil: ^5.9.0
   flutter_svg: ^2.0.10+1
+  geocoding: ^2.2.0
 
 
   cupertino_icons: ^1.0.8
   geolocator: ^14.0.2
+  dio: ^5.9.0
+  flutter_dotenv: ^5.2.1
+  shared_preferences: ^2.5.3
+  firebase_core:
+  firebase_messaging:
+  flutter_local_notifications:
+  connectivity_plus:
+  image_picker: ^1.2.0
+  http_parser: ^4.0.2
+  url_launcher:
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  flutter_native_splash: ^2.4.1
+  flutter_launcher_icons: ^0.13.1
 
 
   flutter_lints: ^5.0.0
@@ -34,4 +47,45 @@ flutter:
   assets:
     - assets/png/
     - assets/svg/
+    - .env
 
+flutter_native_splash:
+  android: true
+  ios: true
+  web: false
+
+  # Light mode
+  color: "#FFFFFF"
+  image: assets/png/deazly_logo.png
+
+
+
+
+
+  # Android 12+ requires separate section
+  android_12:
+    image: assets/png/deazly_logo.png
+
+
+    color: "#FFFFFF"
+
+    icon_background_color: "#FFFFFF"
+
+
+  # iOS layout controls (keep centered logo)
+  ios_content_mode: center
+  fullscreen: true
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+
+  # One source image for both platforms
+  image_path: "assets/png/deazly_icon.png"
+
+  # Android adaptive icon (optional but recommended)
+  adaptive_icon_foreground: "assets/png/deazly_icon.png"
+  # adaptive_icon_monochrome: "assets/png/deazly_icon_monochrome.png"  # optional for Android 13+
+
+  # iOS
+  remove_alpha_ios: true

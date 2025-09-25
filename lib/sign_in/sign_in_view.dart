@@ -1,3 +1,4 @@
+import 'package:dealzy/routes/app_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
@@ -29,8 +30,9 @@ class SignInView extends GetView<SignInController> {
 
     return Scaffold(
       backgroundColor: const Color(0xFF124A89),
-      body: SafeArea(
-        child: Center(
+      body: Padding(
+        padding: EdgeInsets.only(top: 120.h),
+        child: SafeArea(
           child: SingleChildScrollView(
             padding: EdgeInsets.symmetric(horizontal: 16.w),
             child: Stack(
@@ -59,7 +61,7 @@ class SignInView extends GetView<SignInController> {
                                 children: [
                                   const TextSpan(
                                     text:
-                                    '"Welcome back! continue where you left off.\n',
+                                        '"Welcome back! continue where you left off.\n',
                                   ),
                                   TextSpan(
                                     text: 'Sign in now!"',
@@ -84,29 +86,49 @@ class SignInView extends GetView<SignInController> {
                               textInputAction: TextInputAction.next,
                               inputFormatters: [
                                 FilteringTextInputFormatter.allow(
-                                    RegExp(r'[\d\s+\-()]')),
+                                  RegExp(r'[\d\s+\-()]'),
+                                ),
                                 LengthLimitingTextInputFormatter(18),
                               ],
                               validator: controller.validatePhone,
-                              decoration: _dec('enter your  phone number'),
+                              decoration: _dec('Enter your  phone number'),
                             ),
                             SizedBox(height: 12.h),
 
                             // Username
-                            TextFormField(
-                              controller: controller.usernameCtrl,
-                              textInputAction: TextInputAction.done,
-                              validator: controller.validateUsername,
-                              decoration: _dec('username'),
-                            ),
 
-                            // Forget Password? right-aligned
+                            // Password
+                            Obx(() {
+                              final reveal = controller.showPassword.value;
+                              return TextFormField(
+                                controller: controller.passwordCtrl,
+                                textInputAction: TextInputAction.done,
+                                obscureText: !reveal,
+                                validator: controller
+                                    .validatePassword, // ✅ pass the function, don't call it
+                                decoration: _dec('Password').copyWith(
+                                  suffixIcon: IconButton(
+                                    icon: Icon(
+                                      reveal
+                                          ? Icons.visibility
+                                          : Icons.visibility_off,
+                                    ),
+                                    onPressed: controller.showPassword.toggle,
+                                    tooltip: reveal
+                                        ? 'Hide password'
+                                        : 'Show password',
+                                  ),
+                                ),
+                              );
+                            }),
+
+
                             Align(
                               alignment: Alignment.centerRight,
                               child: TextButton(
                                 onPressed: () {
                                   // TODO: navigate to forgot password
-                                  // Get.toNamed(AppPages.forgotPassword);
+                                  Get.toNamed(AppRoutes.forgetPassword);
                                 },
                                 style: TextButton.styleFrom(
                                   padding: EdgeInsets.only(top: 6.h),
@@ -119,8 +141,7 @@ class SignInView extends GetView<SignInController> {
                                 ),
                               ),
                             ),
-
-                            SizedBox(height: 6.h),
+                            SizedBox(height: 12.h),
 
                             // Confirm button
                             Obx(() {
@@ -133,8 +154,9 @@ class SignInView extends GetView<SignInController> {
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: const Color(0xFF124A89),
                                     foregroundColor: Colors.white,
-                                    disabledBackgroundColor:
-                                    const Color(0xFF124A89).withOpacity(0.45),
+                                    disabledBackgroundColor: const Color(
+                                      0xFF124A89,
+                                    ).withOpacity(0.45),
                                     disabledForegroundColor: Colors.white70,
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(14.r),
@@ -143,7 +165,7 @@ class SignInView extends GetView<SignInController> {
                                       fontWeight: FontWeight.w700,
                                     ),
                                   ),
-                                  child: Text(busy ? 'Please wait…' : 'confirm'),
+                                  child: Text(busy ? 'Please wait…' : 'Confirm'),
                                 ),
                               );
                             }),
@@ -164,7 +186,9 @@ class SignInView extends GetView<SignInController> {
                                 ),
                                 GestureDetector(
                                   onTap: () {
-                                   // Get.toNamed(AppPages.pages); // link to Sign Up
+                                    Get.toNamed(
+                                      AppRoutes.location,
+                                    ); // link to Sign Up
                                   },
                                   child: Text(
                                     'Sign up now!',

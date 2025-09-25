@@ -3,6 +3,8 @@ import 'package:get/get.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../routes/app_pages.dart';
 import '../routes/app_routes.dart';
+import '../storage/token_storage.dart';
+import '../widgets/login_required_dialog.dart';
 
 class AppBottomNav extends StatelessWidget {
   const AppBottomNav({
@@ -28,10 +30,29 @@ class AppBottomNav extends StatelessWidget {
     3: AppRoutes.userProfile,
   };
 
-  void _defaultNavigate(int i) {
+  // Sync wrapper for async navigation handler
+  void _onTap(int i) {
+    _handleTap(i);
+  }
+
+  Future<void> _handleTap(int i) async {
     if (i == currentIndex) return; // already on this tab
+
+    // If navigating to User Profile, ensure auth
+    if (i == 1 || i == 3) {
+      final token = await TokenStorage.getToken();
+      if (token == null || token.isEmpty) {
+        // Show login-required dialog and stop navigation
+        Get.dialog(const LoginRequiredDialog(), barrierDismissible: false);
+        return;
+      }
+    }
+
     final route = _routeByIndex[i];
-    if (route != null) Get.offAllNamed(route); // swap root to the tab
+    if (route != null) {
+      // Swap root to the tab
+      Get.offAllNamed(route);
+    }
   }
 
   @override
@@ -76,7 +97,7 @@ class AppBottomNav extends StatelessWidget {
             return _buildItem(
               item: it,
               isActive: isActive,
-              onPressed: (onTap ?? _defaultNavigate),
+              onPressed: onTap ?? _onTap, // uses our guarded handler by default
               activeColor: activeColor,
               inactiveColor: inactiveColor,
               barColor: barColor,
@@ -119,8 +140,7 @@ class AppBottomNav extends StatelessWidget {
         // UNSELECTED: show icon + text side-by-side
             : Row(
           children: [
-            _svg(item.unselectedIcon,
-                color: inactiveColor, size: 22),
+            _svg(item.unselectedIcon, color: inactiveColor, size: 22),
             const SizedBox(width: 6),
             Text(
               item.label,
@@ -141,8 +161,9 @@ class AppBottomNav extends StatelessWidget {
       width: size,
       height: size,
       // If your SVGs already have the desired colors, remove `colorFilter`.
-      colorFilter:
-      color != null ? ColorFilter.mode(color, BlendMode.srcIn) : null,
+      colorFilter: color != null
+          ? ColorFilter.mode(color, BlendMode.srcIn)
+          : null,
     );
   }
 }

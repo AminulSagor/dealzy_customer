@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
+import '../combine_model/product_item_model.dart';
+import '../widgets/product_card.dart';
 import 'store_details_controller.dart';
 
 class StoreDetailsView extends GetView<StoreDetailsController> {
@@ -75,21 +77,38 @@ class _Header extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = controller;
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
+
+        SizedBox(width: 30.w,),
+        // avatar
         CircleAvatar(
           radius: 34,
           backgroundColor: Colors.grey.shade100,
-          backgroundImage: NetworkImage(c.store.avatarUrl),
+          child: (c.store.avatarUrl.isEmpty)
+              ? const Icon(Icons.store, color: Colors.black38, size: 28)
+              : ClipOval(
+            child: Image.network(
+              c.store.avatarUrl,
+              width: 68, height: 68, fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) =>
+              const Icon(Icons.store, color: Colors.black38, size: 28),
+            ),
+          ),
         ),
-        const SizedBox(width: 14),
+        const SizedBox(width: 12),
+
+        // name + type (category) BESIDE the avatar
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 c.store.name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
@@ -99,6 +118,8 @@ class _Header extends StatelessWidget {
               const SizedBox(height: 2),
               Text(
                 c.store.category,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: const TextStyle(fontSize: 14, color: Colors.black54),
               ),
             ],
@@ -108,6 +129,8 @@ class _Header extends StatelessWidget {
     );
   }
 }
+
+
 
 class _InfoList extends StatelessWidget {
   const _InfoList({required this.controller});
@@ -244,28 +267,64 @@ class _BottomSheetShell extends StatelessWidget {
           Expanded(
             child: Obx(() {
               final items = c.products;
-              return GridView.builder(
-                controller: scrollController, // <-- key: sheet-driven scrolling
-                padding: EdgeInsets.fromLTRB(16, 8, 16, bottom > 0 ? bottom : 12),
-                itemCount: items.length,
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 14,
-                  mainAxisSpacing: 14,
-                  childAspectRatio: 0.86,
-                ),
-                itemBuilder: (_, i) {
-                  final p = items[i];
-                  return _ProductCardInSheet(
-                    title: p.title,
-                    price: p.price,
-                    image: p.image,
-                    onAdd: () => c.onAdd(p),
-                  );
+
+              // Loading state (first page)
+              if (c.isLoading.value && items.isEmpty) {
+                return const Center(child: CircularProgressIndicator());
+              }
+
+              // Empty state
+              if (!c.isLoading.value && items.isEmpty) {
+                return const Center(child: Text('No products found'));
+              }
+
+              // Grid + infinite scroll trigger (optional)
+              return NotificationListener<ScrollNotification>(
+                onNotification: (n) {
+                  // When we are close to the bottom, ask controller to load more
+                  if (n.metrics.extentAfter < 400 &&
+                      !c.isLoadingMore.value &&
+                      !c.isLoading.value) {
+                    c.loadMore();
+                  }
+                  return false;
                 },
+                child: GridView.builder(
+                  controller: scrollController, // driven by the DraggableScrollableSheet
+                  padding: EdgeInsets.fromLTRB(16, 8, 16, bottom > 0 ? bottom : 12),
+                  itemCount: items.length + (c.isLoadingMore.value ? 2 : 0), // space for shimmer/loaders
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    crossAxisSpacing: 14,
+                    mainAxisSpacing: 14,
+                    childAspectRatio: 0.86,
+                  ),
+                  itemBuilder: (_, i) {
+                    // tail loaders while paging
+                    if (i >= items.length) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+
+                    final p = items[i];
+                    return ProductCard<ProductItem>(
+                      item: p,
+                      title: p.title,
+                      image: p.image,
+                      price: p.price,
+                      offerPrice: p.offerPrice,
+                      onOpen: (prod) {
+                        // e.g. navigate to details
+                      },
+                      onAdd: (prod) => c.onAdd(prod),   // <-- this now calls BookmarkService
+                      brandColor: StoreDetailsController.blue,
+                    );
+
+                  },
+                ),
               );
             }),
           ),
+
         ],
       ),
     );

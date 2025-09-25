@@ -1,5 +1,11 @@
+// controllers/product_details_controller.dart
+import 'package:dealzy/product_details/product_service.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+
+import '../combine_service/bookmark_service.dart';
+import '../routes/app_routes.dart';
+import '../widgets/login_required_dialog.dart';
 
 class PDStoreInfo {
   const PDStoreInfo({
@@ -24,10 +30,9 @@ class PDReview {
     required this.userName,
     required this.userAvatar,
     required this.rating,
-    required this.dateText, // e.g., "11/12/2024"
+    required this.dateText,
     required this.text,
   });
-
   final String userName;
   final String userAvatar;
   final double rating;
@@ -37,6 +42,7 @@ class PDReview {
 
 class ProductDetails {
   const ProductDetails({
+    required this.id,
     required this.title,
     required this.brand,
     required this.model,
@@ -50,118 +56,203 @@ class ProductDetails {
     required this.rating,
     required this.description,
   });
-
+  final String id;
   final String title;
-  final String brand;              // ✅ fixed
-  final String model;              // "FS5878"
-  final String color;              // "Only Black"
-  final String sizeText;           // "44mm"
-  final String category;           // "Men’s Watch"
-  final String availabilityText;   // "1 In Stock"
+  final String brand;
+  final String model;
+  final String color;      // comma-joined colors from API
+  final String sizeText;   // comma-joined variants from API
+  final String category;
+  final String availabilityText;
   final List<String> images;
   final double mrp;
-  final double offerPrice;
-  final double rating;
+  final double offerPrice; // if no discount, same as mrp
+  final double rating;     // not in API ⇒ keep 0 or compute later
   final String description;
 }
 
 class ProductDetailsController extends GetxController {
+  ProductDetailsController({
+    ProductService? service,
+    String? productId,
+    BookmarkService? bookmarkService,
+  })  : _service = service ?? ProductService(),
+        _bookmark = bookmarkService ?? BookmarkService(),
+        _productId = productId ??
+            // 1) path like /product-details/:id
+            (Get.parameters['id'] ??
+                // 2) query like /product-details?product_id=4
+                Get.parameters['product_id'] ??
+                // 3) Get.arguments = {'product_id': 4} or 4
+                (() {
+                  final a = Get.arguments;
+                  if (a is Map && a['product_id'] != null) return a['product_id'].toString();
+                  if (a != null) return a.toString();
+                  return '';
+                })());
+
   static const blue = Color(0xFF124A89);
 
-  late final ProductDetails product;
-  late final PDStoreInfo store;
+  final ProductService _service;
+  final BookmarkService _bookmark;
+  final String _productId;
+
+  // state
+  final isLoading = true.obs;
+  final error = RxnString();
+
+  late ProductDetails product;
+  late PDStoreInfo store;
   final reviews = <PDReview>[].obs;
 
-  // carousel
+  // carousel & UI states
   final pageCtrl = PageController();
   final currentPage = 0.obs;
-
-  // description expand/collapse
   final descExpanded = false.obs;
-
-  // review expand/collapse (for the first review in mock)
   final firstReviewExpanded = false.obs;
+
+  // bookmarking
+  final isBookmarking = false.obs;
 
   void toggleDesc() => descExpanded.toggle();
   void toggleFirstReview() => firstReviewExpanded.toggle();
 
-  void onBookmark() {
-    Get.snackbar('Saved', 'Bookmarked this product',
-        snackPosition: SnackPosition.BOTTOM);
+  Future<void> onBookmark() async {
+    if (isBookmarking.value) return;
+    if (product.id.isEmpty) return;
+
+    try {
+      isBookmarking.value = true;
+
+      final res = await _bookmark.bookmarkProduct(product.id);
+
+      Get.snackbar(
+        'Saved',
+        res.message.isNotEmpty ? res.message : 'Bookmarked this product',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.green.shade600,
+        colorText: Colors.white,
+        margin: const EdgeInsets.all(12),
+        duration: const Duration(seconds: 2),
+      );
+    } on StateError catch (e) {
+      // check if the error is about missing token
+      if (e.message.contains('Missing token')) {
+        Get.dialog(const LoginRequiredDialog(), barrierDismissible: false);
+      } else {
+        Get.snackbar(
+          'Error',
+          e.message,
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.orange.shade700,
+          colorText: Colors.white,
+          margin: const EdgeInsets.all(12),
+        );
+      }
+    } catch (e) {
+      Get.snackbar(
+        'Bookmark failed',
+        e.toString(),
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red.shade700,
+        colorText: Colors.white,
+        margin: const EdgeInsets.all(12),
+      );
+    } finally {
+      isBookmarking.value = false;
+    }
   }
+
 
   void viewStore() {
-    // TODO: navigate to your Store Details page
-    // Get.toNamed(AppRoutes.storeDetails);
+    // If you later have a storeId, include it as well.
+    Get.toNamed(
+      AppRoutes.storeDetails,
+      arguments: {
+        'store': {
+          'name': store.name,
+          'category': store.category,
+          'address': store.address,
+          'phone': store.phone,
+          'open_time': store.openTime,
+          'close_time': store.closeTime,
+        },
+        // 'store_id': api.storeId, // <- add when available
+      },
+    );
   }
 
+
   bool get isOpenNow {
+    // We don't get timings from API. Keep fixed hours or hide the row.
     final now = DateTime.now();
-    final open = _parseToday(store.openTime);
-    final close = _parseToday(store.closeTime);
+    final open = _parseToday('10:00');
+    final close = _parseToday('21:30');
     if (close.isBefore(open)) {
       return now.isAfter(open) || now.isBefore(close.add(const Duration(days: 1)));
     }
     return now.isAfter(open) && now.isBefore(close);
   }
 
-  String get openLabel12h => _format12h(store.openTime);
-  String get closeLabel12h => _format12h(store.closeTime);
+  String get openLabel12h => _format12h('10:00');
+  String get closeLabel12h => _format12h('21:30');
 
   @override
   void onInit() {
     super.onInit();
-
-    // --- Dummy data (edit as needed) ---
-    product = ProductDetails(
-      title: 'Fossil Bronson Chronograph Dark Red  Men\'s Watch | FS5878',
-      brand: 'Fossil',                   // ✅ fixed usage
-      model: 'FS5878',
-      color: 'Only Black',
-      sizeText: '44mm',
-      category: 'Men’s Watch',
-      availabilityText: '1 In Stock',
-      images: const [
-        'https://images.unsplash.com/photo-1523275335684-37898b6baf30?q=80&w=800&auto=format&fit=crop',
-        'https://images.unsplash.com/photo-1511735111819-9a3f7709049c?q=80&w=800&auto=format&fit=crop',
-        'https://images.unsplash.com/photo-1516574187841-cb9cc2ca948b?q=80&w=800&auto=format&fit=crop',
-      ],
-      mrp: 67,
-      offerPrice: 55,
-      rating: 4.5,
-      description:
-      'Lorem ipsum is simply dummy text of the printing and typesetting industry. '
-          'Lorem ipsum has specimen book. It has survived not only five centuries, '
-          'but also the leap into electronic typesetting, remaining essentially unchanged...',
-    );
-
-    store = const PDStoreInfo(
-      name: 'Fashion.Hube',
-      category: 'clothing',
-      address: 'jalalabad, sylhet',
-      phone: '+88 016 4738 723',
-      openTime: '10:00',
-      closeTime: '21:30',
-    );
-
-    reviews.assignAll(const [
-      PDReview(
-        userName: 'Fouzia Hussain',
-        userAvatar:
-        'https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=200&auto=format&fit=crop',
-        rating: 4.5,
-        dateText: '11/12/2024',
-        text:
-        'Lorem ipsum is simply dummy text of the printing and typesetting industry. '
-            'Lorem ipsum has been the industry’s standard dummy text ever since the, but also '
-            'the leap into electronic typesetting, remaining essentially unchanged....',
-      ),
-    ]);
-
+    _load();
     pageCtrl.addListener(() {
       final p = pageCtrl.page ?? 0.0;
       currentPage.value = p.round();
     });
+  }
+
+  Future<void> _load() async {
+    if (_productId.isEmpty) {
+      error.value = 'No product id provided';
+      isLoading.value = false;
+      return;
+    }
+    try {
+      isLoading.value = true;
+      error.value = null;
+
+      final api = await _service.fetchDetails(_productId);
+
+      // Map API model -> UI model your widgets already use
+      product = ProductDetails(
+        id: api.id,
+        title: api.name,
+        brand: api.brand,
+        model: api.model,
+        color: api.colorOneLine,              // "Red, Blue"
+        sizeText: api.variantOneLine,         // "64GB, 32GB"
+        category: api.category,
+        availabilityText: api.availabilityText,
+        images: api.images,
+        mrp: api.price,
+        offerPrice: api.hasDiscount ? api.finalPrice : api.price,
+        rating: 0, // API doesn't provide rating; keep 0 or compute later
+        description: api.description,
+      );
+
+      store = PDStoreInfo(
+        name: api.storeName,
+        category: api.storeType,
+        address: api.address,
+        phone: api.phone,
+        openTime: '10:00',
+        closeTime: '21:30',
+      );
+
+      // If/when you add real reviews API, replace this:
+      reviews.assignAll(const []);
+
+    } catch (e) {
+      error.value = e.toString();
+    } finally {
+      isLoading.value = false;
+    }
   }
 
   @override
@@ -170,7 +261,6 @@ class ProductDetailsController extends GetxController {
     super.onClose();
   }
 
-  // helpers
   DateTime _parseToday(String hhmm24) {
     final parts = hhmm24.split(':');
     final h = int.parse(parts[0]);

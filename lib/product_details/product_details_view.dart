@@ -13,22 +13,35 @@ class ProductDetailsView extends GetView<ProductDetailsController> {
       backgroundColor: Colors.white,
       body: Stack(
         children: [
-          // Main scroll
-          ListView(
-            padding: EdgeInsets.only(
-              bottom: 100 + MediaQuery.of(context).padding.bottom,
-            ),
-            children: [
-              // 1) Full-bleed image (touches top/left/right)
-              _HeroImage(controller: c),
+          // Reactive body: loading → spinner, error → message, data → content
+          Obx(() {
+            if (c.isLoading.value) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            if (c.error.value != null) {
+              return _ErrorState(
+                message: c.error.value!,
+                onRetry: () => c.onInit(), // simple retry
+              );
+            }
 
-              // 2) Curved white body that "carves" into the image
-              Transform.translate(
-                offset: const Offset(0, -24),
-                child: _CurvedBody(controller: c),
+            // Main scroll when data present
+            return ListView(
+              padding: EdgeInsets.only(
+                bottom: 100 + MediaQuery.of(context).padding.bottom,
               ),
-            ],
-          ),
+              children: [
+                // 1) Full-bleed image (touches top/left/right)
+                _HeroImage(controller: c),
+
+                // 2) Curved white body that "carves" into the image
+                Transform.translate(
+                  offset: const Offset(0, -24),
+                  child: _CurvedBody(controller: c),
+                ),
+              ],
+            );
+          }),
 
           // Floating back button over the image
           Positioned(
@@ -52,23 +65,27 @@ class ProductDetailsView extends GetView<ProductDetailsController> {
             right: 0,
             bottom: 14 + MediaQuery.of(context).padding.bottom,
             child: Center(
-              child: ElevatedButton(
-                onPressed: c.onBookmark,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF124A89),
-                  elevation: 8,
-                  shadowColor: Colors.black.withOpacity(.18),
-                  padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(28),
-                    side: const BorderSide(color: Colors.black12),
+              child: // In ProductDetailsView, where the "Bookmark" button is:
+              Obx(() {
+                final busy = c.isBookmarking.value;
+                return ElevatedButton(
+                  onPressed: busy ? null : c.onBookmark, // disabled when busy
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF124A89),
+                    elevation: 8,
+                    shadowColor: Colors.black.withOpacity(.18),
+                    padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(28),
+                      side: const BorderSide(color: Colors.black12),
+                    ),
                   ),
-                ),
-                child: const Text(
-                  'Bookmark',
-                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
-                ),
-              ),
+                  child: Text(
+                    busy ? 'Saving...' : 'Bookmark',
+                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
+                  ),
+                );
+              }),
             ),
           ),
         ],
@@ -77,7 +94,7 @@ class ProductDetailsView extends GetView<ProductDetailsController> {
   }
 }
 
-/// Full-bleed hero image (no dots here)
+/// Full-bleed hero image (handles empty/fallback safely)
 class _HeroImage extends StatelessWidget {
   const _HeroImage({required this.controller});
   final ProductDetailsController controller;
@@ -85,13 +102,20 @@ class _HeroImage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = controller;
+    final images = c.product.images;
     return AspectRatio(
       aspectRatio: 1,
-      child: PageView.builder(
+      child: (images.isEmpty)
+          ? Container(
+        color: Colors.grey.shade200,
+        alignment: Alignment.center,
+        child: const Icon(Icons.image_not_supported_rounded, size: 48, color: Colors.grey),
+      )
+          : PageView.builder(
         controller: c.pageCtrl,
-        itemCount: c.product.images.length,
+        itemCount: images.length,
         itemBuilder: (_, i) => Image.network(
-          c.product.images[i],
+          images[i],
           width: double.infinity,
           fit: BoxFit.cover,
         ),
@@ -128,21 +152,24 @@ class _CurvedBody extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Dots on white background
+            // Dots on white background (explicit Rx read)
             Center(
               child: Obx(() {
+                final page = c.currentPage.value;          // <-- Rx read
+                final total = c.product.images.length;     // non-Rx is fine
+                if (total <= 1) return const SizedBox(height: 20);
                 return Row(
                   mainAxisSize: MainAxisSize.min,
                   children: List.generate(
-                    c.product.images.length,
+                    total,
                         (i) => Container(
                       width: 8,
                       height: 8,
                       margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: (c.currentPage.value == i)
-                            ? Color(0xFF124A89)
+                        color: (page == i)
+                            ? const Color(0xFF124A89)
                             : Colors.blueGrey.withOpacity(.35),
                       ),
                     ),
@@ -152,7 +179,7 @@ class _CurvedBody extends StatelessWidget {
             ),
             const SizedBox(height: 6),
 
-            // Title + rating
+            // Title
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -168,51 +195,13 @@ class _CurvedBody extends StatelessWidget {
                     ),
                   ),
                 ),
-                const SizedBox(width: 8),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.star, color: Colors.amber, size: 18),
-                    const SizedBox(width: 4),
-                    Text(
-                      '${c.product.rating} Rating',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w600,
-                        color: Colors.black87,
-                      ),
-                    ),
-                  ],
-                ),
               ],
             ),
 
             const SizedBox(height: 12),
 
-            // Price row
-            Row(
-              children: [
-                Text(
-                  '\$${c.product.mrp.toStringAsFixed(0)}',
-                  style: const TextStyle(
-                    color: Colors.black45,
-                    decoration: TextDecoration.lineThrough,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Text(
-                  '\$${c.product.offerPrice.toStringAsFixed(0)}',
-                  style: const TextStyle(
-                    color: Colors.red,
-                    fontSize: 20,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                const SizedBox(width: 6),
-                const Text('(regular offer)', style: TextStyle(color: Colors.black54)),
-              ],
-            ),
+            // Price row — dynamic (shows strike-through only if discounted)
+            _PriceRow(controller: c),
 
             const SizedBox(height: 12),
 
@@ -225,10 +214,10 @@ class _CurvedBody extends StatelessWidget {
             _SpecRow(label: 'Availability', value: c.product.availabilityText),
             const SizedBox(height: 10),
 
-            // Description
+            // Description (explicit Rx read)
             Obx(() => _ExpandableText(
               text: c.product.description,
-              expanded: c.descExpanded.value,
+              expanded: c.descExpanded.value, // <-- Rx read
               onToggle: c.toggleDesc,
             )),
             const SizedBox(height: 18),
@@ -247,28 +236,58 @@ class _CurvedBody extends StatelessWidget {
             _ShopDetails(controller: c),
             const SizedBox(height: 18),
 
-            // Review
-            const Text(
-              'Review',
-              textAlign: TextAlign.left,
-              style: TextStyle(
-                fontWeight: FontWeight.w700,
-                fontSize: 16,
-                color: Colors.black87,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Obx(() {
-              final r = c.reviews.isNotEmpty ? c.reviews.first : null;
-              if (r == null) return const SizedBox.shrink();
-              return _ReviewCard(
-                review: r,
-                expanded: c.firstReviewExpanded.value,
-                onToggle: c.toggleFirstReview,
-              );
-            }),
+
+
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _PriceRow extends StatelessWidget {
+  const _PriceRow({required this.controller});
+  final ProductDetailsController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    final p = controller.product;
+    final hasDiscount = p.offerPrice < p.mrp;
+
+    if (hasDiscount) {
+      return Row(
+        children: [
+          Text(
+            '\£${p.mrp.toStringAsFixed(0)}',
+            style: const TextStyle(
+              color: Colors.black45,
+              decoration: TextDecoration.lineThrough,
+              fontSize: 18,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Text(
+            '\£${p.offerPrice.toStringAsFixed(0)}',
+            style: const TextStyle(
+              color: Colors.red,
+              fontSize: 20,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(width: 6),
+          const Text('(offer)', style: TextStyle(color: Colors.black54)),
+        ],
+      );
+    }
+
+    // No discount → single price, no strike-through
+    return Text(
+      '\$${p.mrp.toStringAsFixed(0)}',
+      style: const TextStyle(
+        color: Colors.black87,
+        fontSize: 20,
+        fontWeight: FontWeight.w800,
       ),
     );
   }
@@ -322,6 +341,7 @@ class _ExpandableText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final showToggle = text.trim().isNotEmpty;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -332,19 +352,21 @@ class _ExpandableText extends StatelessWidget {
           overflow: expanded ? TextOverflow.visible : TextOverflow.ellipsis,
           style: const TextStyle(color: Colors.black87, height: 1.35),
         ),
-        const SizedBox(height: 4),
-        GestureDetector(
-          onTap: onToggle,
-          child: const Text(
-            'see more',
-            textAlign: TextAlign.left,
-            style: TextStyle(
-              color: Colors.black54,
-              decoration: TextDecoration.underline,
-              fontWeight: FontWeight.w600,
+        if (showToggle) ...[
+          const SizedBox(height: 4),
+          GestureDetector(
+            onTap: onToggle,
+            child: Text(
+              expanded ? 'see less' : 'see more',
+              textAlign: TextAlign.left,
+              style: const TextStyle(
+                color: Colors.black54,
+                decoration: TextDecoration.underline,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
-        ),
+        ],
       ],
     );
   }
@@ -518,21 +540,6 @@ class _ReviewCard extends StatelessWidget {
                         color: Colors.black87,
                       ),
                     ),
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.star, color: Colors.amber, size: 16),
-                        const SizedBox(width: 4),
-                        Text(
-                          '${review.rating} Rating',
-                          textAlign: TextAlign.left,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w600,
-                            color: Colors.black87,
-                          ),
-                        ),
-                      ],
-                    ),
                   ],
                 ),
               ),
@@ -549,6 +556,38 @@ class _ReviewCard extends StatelessWidget {
             trimLines: 3,
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _ErrorState extends StatelessWidget {
+  const _ErrorState({required this.message, required this.onRetry});
+  final String message;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.error_outline, size: 36, color: Colors.red),
+            const SizedBox(height: 12),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: Colors.black87),
+            ),
+            const SizedBox(height: 12),
+            ElevatedButton(
+              onPressed: onRetry,
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
       ),
     );
   }

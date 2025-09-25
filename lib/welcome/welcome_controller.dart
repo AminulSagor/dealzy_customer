@@ -6,6 +6,6 @@ class WelcomeController extends GetxController {
 
   void onNext() {
     // TODO: replace with your actual next route
-    Get.toNamed('/onboarding');
+    Get.toNamed('/home');
   }
 }

@@ -1,11 +1,10 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
 <dict>
+	<key>CADisableMinimumFrameDurationOnPhone</key>
+	<true/>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Dealzy</string>
+	<string>Dealzyloop</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -24,6 +23,29 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+
+	<!-- Location (while using the app) -->
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Dealzy uses your location to show nearby stores, delivery availability, and relevant deals.</string>
+
+	<!-- Apple flagged Always+WhenInUse; include this even if you never call requestAlwaysAuthorization -->
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Dealzy may access your location to keep local offers up to date.</string>
+
+	<!-- Older iOS compatibility -->
+	<key>NSLocationAlwaysUsageDescription</key>
+	<string>Dealzy may access your location to improve local features.</string>
+
+	<key>NSPhotoLibraryUsageDescription</key>
+    <string>We use the photo library to let you choose a profile picture.</string>
+
+
+	<key>UIApplicationSupportsIndirectInputEvents</key>
+	<true/>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
+	</array>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>
@@ -41,12 +63,4 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
-	<key>CADisableMinimumFrameDurationOnPhone</key>
-	<true/>
-	<key>UIApplicationSupportsIndirectInputEvents</key>
-	<true/>
-	<key>NSLocationWhenInUseUsageDescription</key>
-    <string>We use your location to show nearby deals.</string>
-
 </dict>
-</plist>

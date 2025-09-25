@@ -1,15 +1,35 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:get/get.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+
+import 'combine_service/connection_service.dart';
+import 'combine_service/push_service.dart';
 import 'routes/app_pages.dart';
 import 'routes/app_routes.dart';
+import 'storage/first_launch_storage.dart'; // <-- add this
 
-void main() {
-  runApp(const MyApp());
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await dotenv.load(fileName: ".env");
+
+  await PushService.init();
+  await Get.putAsync(() => ConnectionService().init());
+
+  // Decide the first screen while native splash is still showing
+  final isFirst = await FirstLaunchStorage.isFirstLaunch();
+  if (isFirst) {
+    await FirstLaunchStorage.setLaunched();
+  }
+
+  runApp(MyApp(
+    initialRoute: isFirst ? AppRoutes.welcome : AppRoutes.home,
+  ));
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  const MyApp({super.key, required this.initialRoute});
+  final String initialRoute;
 
   @override
   Widget build(BuildContext context) {
@@ -20,7 +40,7 @@ class MyApp extends StatelessWidget {
         return GetMaterialApp(
           debugShowCheckedModeBanner: false,
           title: 'Dealzy',
-          initialRoute: AppRoutes.home,
+          initialRoute: initialRoute, // <-- no more Splash route
           getPages: AppPages.pages,
         );
       },

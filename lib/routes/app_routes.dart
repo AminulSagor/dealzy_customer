@@ -1,6 +1,5 @@
 class AppRoutes {
   static const welcome = '/welcome';
-  static const onboarding = '/onboarding';
   static const location = '/location';
   static const signUp = '/sign-up';
   static const signIn = '/sign-in';
@@ -13,4 +12,9 @@ class AppRoutes {
   static const storeDetails = '/store-details';
   static const productDetails = '/product-details';
   static const home = '/home';
+  static const noInternet = '/no-internet';
+  static const forgetPassword = '/forget-password';
+  static const otpVerification = '/otp-verification';
+  static const updatePassword = '/update-password';
+  static const String userAgreement = '/user-agreement';
 }

@@ -16,35 +16,38 @@ class WelcomeView extends GetView<WelcomeController> {
 
     return Scaffold(
       backgroundColor: const Color(0xFF124A89),
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            physics: const BouncingScrollPhysics(),
-            child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16.w),
-              child: Stack(
-                clipBehavior: Clip.none,
-                alignment: Alignment.topCenter,
-                children: [
-                  // Card placed lower to allow the logo to overlap it
-                  Padding(
-                    padding: EdgeInsets.only(top: cardTopOffset),
-                    child: _WelcomeCard(theme: theme, controller: controller),
-                  ),
+      body: Padding(
+        padding: EdgeInsets.only(top: 160.h),
+        child: SafeArea(
 
-                  // Overlapping logo
-                  Positioned(
-                    top: 0,
-                    child: Image.asset(
-                      'assets/png/logo.png',
-                      height: logoHeight,
-                      fit: BoxFit.contain,
+            child: SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16.w),
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  alignment: Alignment.topCenter,
+                  children: [
+                    // Card placed lower to allow the logo to overlap it
+                    Padding(
+                      padding: EdgeInsets.only(top: cardTopOffset),
+                      child: _WelcomeCard(theme: theme, controller: controller),
                     ),
-                  ),
-                ],
+
+                    // Overlapping logo
+                    Positioned(
+                      top: 0,
+                      child: Image.asset(
+                        'assets/png/logo.png',
+                        height: logoHeight,
+                        fit: BoxFit.contain,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
+
         ),
       ),
     );

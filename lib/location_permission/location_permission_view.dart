@@ -19,8 +19,9 @@ class LocationPermissionView extends GetView<LocationPermissionController> {
 
     return Scaffold(
       backgroundColor: const Color(0xFF124A89),
-      body: SafeArea(
-        child: Center(
+      body: Padding(
+        padding: EdgeInsets.only(top: 120.h),
+        child: SafeArea(
           child: SingleChildScrollView(
             padding: EdgeInsets.symmetric(horizontal: 16.w),
             child: Stack(
@@ -57,7 +58,11 @@ class LocationPermissionView extends GetView<LocationPermissionController> {
                                 child: Transform(
                                   alignment: Alignment.center,
                                   // widen horizontally only; keep height the same
-                                  transform: Matrix4.diagonal3Values(1.35, 1.0, 1.0), // try 1.2–1.4
+                                  transform: Matrix4.diagonal3Values(
+                                    1.35,
+                                    1.0,
+                                    1.0,
+                                  ), // try 1.2–1.4
                                   child: Image.asset(
                                     'assets/png/design_behind_location_icon.png',
                                     fit: BoxFit.cover,
@@ -68,7 +73,7 @@ class LocationPermissionView extends GetView<LocationPermissionController> {
                             ),
 
                             Positioned(
-                              bottom:  55, // overlap into content
+                              bottom: 55, // overlap into content
                               child: Image.asset(
                                 'assets/png/location_icon.png',
                                 height: pinSize,
@@ -104,12 +109,15 @@ class LocationPermissionView extends GetView<LocationPermissionController> {
                                 child: Obx(() {
                                   final busy = controller.isBusy.value;
                                   return ElevatedButton(
-                                    onPressed: busy ? null : controller.requestLocation,
+                                    onPressed: busy
+                                        ? null
+                                        : controller.requestLocation,
                                     style: ElevatedButton.styleFrom(
                                       backgroundColor: const Color(0xFF124A89),
                                       foregroundColor: Colors.white,
-                                      disabledBackgroundColor:
-                                      const Color(0xFF124A89).withOpacity(0.5),
+                                      disabledBackgroundColor: const Color(
+                                        0xFF124A89,
+                                      ).withOpacity(0.5),
                                       disabledForegroundColor: Colors.white70,
                                       shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(14.r),
@@ -122,7 +130,9 @@ class LocationPermissionView extends GetView<LocationPermissionController> {
                                         SizedBox(width: 10.w),
                                         Text(
                                           busy ? 'Please wait…' : 'Get Location',
-                                          style: const TextStyle(fontWeight: FontWeight.w700),
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.w700,
+                                          ),
                                         ),
                                       ],
                                     ),

@@ -1,15 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:dio/dio.dart';
+import '../routes/app_routes.dart';
+import '../storage/token_storage.dart';
+import 'login_service.dart';
 
 class SignInController extends GetxController {
   final formKey = GlobalKey<FormState>();
 
   final phoneCtrl = TextEditingController();
-  final usernameCtrl = TextEditingController();
+  final passwordCtrl = TextEditingController();
 
   final isBusy = false.obs;
   final isValid = false.obs;
+  final showPassword = false.obs;
 
+  late final LoginService _loginService;
+
+  // ---------- validators ----------
   String? validatePhone(String? v) {
     final s = (v ?? '').trim();
     if (s.isEmpty) return 'Phone is required';
@@ -18,29 +26,65 @@ class SignInController extends GetxController {
     return null;
   }
 
-  String? validateUsername(String? v) {
+  String? validatePassword(String? v) {
     final s = (v ?? '').trim();
-    if (s.isEmpty) return 'Username is required';
-    if (s.length < 3) return 'At least 3 characters';
+    if (s.isEmpty) return 'Password is required';
+    if (s.length < 4) return 'At least 4 characters';
     return null;
   }
 
-  void _revalidate() {
-    isValid.value = formKey.currentState?.validate() ?? false;
-  }
+  void _revalidate() => isValid.value = formKey.currentState?.validate() ?? false;
 
+  // ---------- submit ----------
   Future<void> submit() async {
-    if (!(formKey.currentState?.validate() ?? false)) {
+    if (isBusy.value) return;
+
+    // Validate form
+    final isFormValid = formKey.currentState?.validate() ?? false;
+    if (!isFormValid) {
       _revalidate();
       return;
     }
+
     isBusy.value = true;
     try {
-      // TODO: call sign-in API
-      await Future.delayed(const Duration(milliseconds: 700));
-      Get.snackbar('Welcome back', 'Signed in successfully!');
-      // TODO: navigate to home
-      // Get.offAllNamed(AppPages.home);
+      // Normalize phone: keep digits only
+      final normalizedPhone = phoneCtrl.text.replaceAll(RegExp(r'\D'), '');
+
+      // Call API
+      final r = await _loginService.login(
+        phone: normalizedPhone,
+        password: passwordCtrl.text.trim(),
+      );
+
+      if (!r.success) {
+        Get.snackbar('Login failed', r.message.isNotEmpty ? r.message : r.status);
+        return;
+      }
+
+      // Extract user payload
+      final u     = r.user;
+      final token = (u?['token'] ?? '').toString().trim();
+      final name  = (u?['name']  ?? '').toString().trim();
+      final id    = (u?['id']    ?? '').toString().trim();
+
+      // Ensure token exists
+      if (token.isEmpty) {
+        Get.snackbar('Login', 'Missing token in response.');
+        return;
+      }
+
+      // Persist token
+      await TokenStorage.saveToken(token);
+      // If you later add helpers: save user id/name here too.
+
+      // Success UI + navigate
+      Get.snackbar('Welcome${name.isNotEmpty ? ', $name' : ''}',
+          r.message.isNotEmpty ? r.message : 'Login successful.');
+      Get.offAllNamed(AppRoutes.home);
+    } on DioException catch (e) {
+      final msg = e.response?.data?.toString() ?? e.message ?? 'Network error';
+      Get.snackbar('Network error', msg);
     } catch (e) {
       Get.snackbar('Error', e.toString());
     } finally {
@@ -48,17 +92,21 @@ class SignInController extends GetxController {
     }
   }
 
+
+  // ---------- lifecycle ----------
   @override
   void onInit() {
     super.onInit();
+    _loginService = LoginService();
+
     phoneCtrl.addListener(_revalidate);
-    usernameCtrl.addListener(_revalidate);
+    passwordCtrl.addListener(_revalidate);
   }
 
   @override
   void onClose() {
     phoneCtrl.dispose();
-    usernameCtrl.dispose();
+    passwordCtrl.dispose();
     super.onClose();
   }
 }

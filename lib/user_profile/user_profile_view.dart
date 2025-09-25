@@ -51,25 +51,45 @@ class UserProfileView extends GetView<UserProfileController> {
                       CircleAvatar(
                         radius: size / 2,
                         backgroundColor: Colors.grey.shade200,
-                        backgroundImage: c.avatar.value.startsWith('http')
+                        backgroundImage: (c.avatar.value.isNotEmpty && c.avatar.value.startsWith('http'))
                             ? NetworkImage(c.avatar.value)
-                            : AssetImage(c.avatar.value) as ImageProvider,
+                            : null,
+                        child: (c.avatar.value.isEmpty || !c.avatar.value.startsWith('http'))
+                            ? const Icon(Icons.person, color: Colors.grey, size: 32)
+                            : null,
                       ),
+
+                      // uploading dim + spinner
+                      if (c.isUploadingAvatar.value)
+                        Positioned.fill(
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: Colors.black.withOpacity(0.25),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Center(
+                              child: SizedBox(
+                                width: 28,
+                                height: 28,
+                                child: CircularProgressIndicator(strokeWidth: 2.4),
+                              ),
+                            ),
+                          ),
+                        ),
+
+                      // camera badge
                       Positioned(
                         right: 12,
                         bottom: -7,
                         child: Container(
-                          padding: const EdgeInsets.all(3), // ring thickness
-                          decoration: const BoxDecoration(
-                            color: Colors.white,            // ring color
-                            shape: BoxShape.circle,
-                          ),
+                          padding: const EdgeInsets.all(3),
+                          decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
                           child: Material(
                             color: const Color(0xFF124A89),
                             shape: const CircleBorder(),
                             child: InkWell(
                               customBorder: const CircleBorder(),
-                              onTap: c.changeAvatar,
+                              onTap: c.isUploadingAvatar.value ? null : c.changeAvatar,
                               child: const SizedBox(
                                 width: 24,
                                 height: 24,
@@ -78,10 +98,10 @@ class UserProfileView extends GetView<UserProfileController> {
                             ),
                           ),
                         ),
-                      )
-
+                      ),
                     ],
                   );
+
                 }),
               ],
             ),
@@ -111,20 +131,65 @@ class UserProfileView extends GetView<UserProfileController> {
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                   ),
                   const SizedBox(height: 12),
-                  Obx(() => SizedBox(
-                    height: 220,
-                    child: ListView.separated(
-                      scrollDirection: Axis.horizontal,
-                      padding: const EdgeInsets.only(right: 16),
-                      itemCount: c.collection.length,
-                      separatorBuilder: (_, __) => const SizedBox(width: 16),
-                      itemBuilder: (_, i) => _CollectionCard(
-                        item: c.collection[i],
-                        onOpen: c.openProduct,
-                        onRemove: c.removeFromCollection,
+
+                  Obx(() {
+                    // empty state
+                    if (c.collection.isEmpty) {
+                      return SizedBox(
+                        height: 140,
+                        child: Row(
+                          children: const [
+                            SizedBox(width: 8),
+                            Icon(Icons.bookmark_border, color: Colors.black54),
+                            SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'You do not have any bookmarked items.',
+                                style: TextStyle(color: Colors.black87),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+
+                    // normal list + footer loader
+                    final showFooter = c.isLoadingMore.value;
+                    final count = c.collection.length + (showFooter ? 1 : 0);
+
+                    return SizedBox(
+                      height: 220,
+                      child: ListView.separated(
+                        controller: c.collectionCtrl,        // <-- wired
+                        scrollDirection: Axis.horizontal,
+                        padding: const EdgeInsets.only(right: 16),
+                        itemCount: count,                     // <-- includes footer
+                        separatorBuilder: (_, __) => const SizedBox(width: 16),
+                        itemBuilder: (_, i) {
+                          // footer cell
+                          if (showFooter && i == count - 1) {
+                            return const SizedBox(
+                              width: 165,
+                              child: Center(
+                                child: SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                ),
+                              ),
+                            );
+                          }
+
+                          final item = c.collection[i];
+                          return _CollectionCard(
+                            item: item,
+                            onOpen: c.openProduct,
+                            onRemove: c.removeFromCollection,
+                          );
+                        },
                       ),
-                    ),
-                  )),
+                    );
+                  }),
                 ],
               ),
             ),
@@ -212,7 +277,7 @@ class _CollectionCard extends StatelessWidget {
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              '\$${item.price.toStringAsFixed(0)}',
+                              '\£${item.price.toStringAsFixed(0)}',
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 13,
