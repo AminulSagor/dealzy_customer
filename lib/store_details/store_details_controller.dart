@@ -91,13 +91,13 @@ class StoreDetailsController extends GetxController {
         Get.snackbar(
           'Bookmarked',
           '${p.title} added to bookmarks',
-          snackPosition: SnackPosition.BOTTOM,
+          snackPosition: SnackPosition.TOP,
         );
       } else {
         Get.snackbar(
           'Failed',
           res.message.isEmpty ? 'Bookmark failed' : res.message,
-          snackPosition: SnackPosition.BOTTOM,
+          snackPosition: SnackPosition.TOP,
           backgroundColor: Colors.red.shade200,
         );
       }
@@ -105,7 +105,7 @@ class StoreDetailsController extends GetxController {
       Get.snackbar(
         'Error',
         e.toString(),
-        snackPosition: SnackPosition.BOTTOM,
+        snackPosition: SnackPosition.TOP,
         backgroundColor: Colors.red.shade200,
       );
     } finally {

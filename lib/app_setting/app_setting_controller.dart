@@ -99,11 +99,7 @@ class AppSettingController extends GetxController {
       await _logoutService.logout();
       await TokenStorage.clearToken();
       Get.offAllNamed(AppRoutes.home);
-      Get.snackbar(
-        'Logged Out',
-        'You have been signed out.',
-        snackPosition: SnackPosition.BOTTOM,
-      );
+
     } catch (e) {
       // Even if server call fails, clear local session
       await TokenStorage.clearToken();

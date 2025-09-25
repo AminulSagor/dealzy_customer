@@ -424,17 +424,7 @@ class _ShopDetails extends StatelessWidget {
                   ],
                 ),
               ),
-              InkWell(
-                onTap: c.viewStore,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: const [
-                    Text('View', style: TextStyle(color: Colors.black87)),
-                    SizedBox(width: 4),
-                    Icon(Icons.chevron_right, size: 20, color: Colors.black87),
-                  ],
-                ),
-              ),
+
             ],
           ),
           const SizedBox(height: 12),
@@ -495,71 +485,7 @@ class _ShopDetails extends StatelessWidget {
   }
 }
 
-class _ReviewCard extends StatelessWidget {
-  const _ReviewCard({
-    required this.review,
-    required this.expanded,
-    required this.onToggle,
-  });
 
-  final PDReview review;
-  final bool expanded;
-  final VoidCallback onToggle;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(.06),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              CircleAvatar(radius: 18, backgroundImage: NetworkImage(review.userAvatar)),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      review.userName,
-                      textAlign: TextAlign.left,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w700,
-                        color: Colors.black87,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Text(review.dateText, style: const TextStyle(color: Colors.black54)),
-              const SizedBox(width: 6),
-              const Icon(Icons.close, size: 18, color: Colors.black54),
-            ],
-          ),
-          const SizedBox(height: 10),
-          _ExpandableText(
-            text: review.text,
-            expanded: expanded,
-            onToggle: onToggle,
-            trimLines: 3,
-          ),
-        ],
-      ),
-    );
-  }
-}
 
 class _ErrorState extends StatelessWidget {
   const _ErrorState({required this.message, required this.onRetry});

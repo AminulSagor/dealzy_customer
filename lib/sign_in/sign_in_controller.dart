@@ -66,7 +66,6 @@ class SignInController extends GetxController {
       final u     = r.user;
       final token = (u?['token'] ?? '').toString().trim();
       final name  = (u?['name']  ?? '').toString().trim();
-      final id    = (u?['id']    ?? '').toString().trim();
 
       // Ensure token exists
       if (token.isEmpty) {
@@ -76,11 +75,6 @@ class SignInController extends GetxController {
 
       // Persist token
       await TokenStorage.saveToken(token);
-      // If you later add helpers: save user id/name here too.
-
-      // Success UI + navigate
-      Get.snackbar('Welcome${name.isNotEmpty ? ', $name' : ''}',
-          r.message.isNotEmpty ? r.message : 'Login successful.');
       Get.offAllNamed(AppRoutes.home);
     } on DioException catch (e) {
       final msg = e.response?.data?.toString() ?? e.message ?? 'Network error';

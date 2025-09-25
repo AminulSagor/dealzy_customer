@@ -2,13 +2,12 @@
 import 'package:dealzy/product_details/product_service.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-
 import '../combine_service/bookmark_service.dart';
-import '../routes/app_routes.dart';
 import '../widgets/login_required_dialog.dart';
 
 class PDStoreInfo {
   const PDStoreInfo({
+    required this.id,
     required this.name,
     required this.category,
     required this.address,
@@ -18,6 +17,7 @@ class PDStoreInfo {
   });
 
   final String name;
+  final String id;
   final String category;
   final String address;
   final String phone;
@@ -164,38 +164,22 @@ class ProductDetailsController extends GetxController {
   }
 
 
-  void viewStore() {
-    // If you later have a storeId, include it as well.
-    Get.toNamed(
-      AppRoutes.storeDetails,
-      arguments: {
-        'store': {
-          'name': store.name,
-          'category': store.category,
-          'address': store.address,
-          'phone': store.phone,
-          'open_time': store.openTime,
-          'close_time': store.closeTime,
-        },
-        // 'store_id': api.storeId, // <- add when available
-      },
-    );
-  }
+
 
 
   bool get isOpenNow {
-    // We don't get timings from API. Keep fixed hours or hide the row.
     final now = DateTime.now();
-    final open = _parseToday('10:00');
-    final close = _parseToday('21:30');
+    final open = _parseToday(store.openTime);
+    final close = _parseToday(store.closeTime);
     if (close.isBefore(open)) {
+      // overnight schedule
       return now.isAfter(open) || now.isBefore(close.add(const Duration(days: 1)));
     }
     return now.isAfter(open) && now.isBefore(close);
   }
 
-  String get openLabel12h => _format12h('10:00');
-  String get closeLabel12h => _format12h('21:30');
+  String get openLabel12h => _format12h(store.openTime);
+  String get closeLabel12h => _format12h(store.closeTime);
 
   @override
   void onInit() {
@@ -238,11 +222,13 @@ class ProductDetailsController extends GetxController {
 
       store = PDStoreInfo(
         name: api.storeName,
+        id: api.sellerId,
         category: api.storeType,
         address: api.address,
         phone: api.phone,
-        openTime: '10:00',
-        closeTime: '21:30',
+        openTime: api.openingTimeHHmm,
+        closeTime: api.closingTimeHHmm,
+
       );
 
       // If/when you add real reviews API, replace this:
@@ -276,4 +262,8 @@ class ProductDetailsController extends GetxController {
     final ampm = dt.hour >= 12 ? 'pm' : 'am';
     return '$h:$m $ampm';
   }
+
+
+
+
 }

@@ -1,8 +1,6 @@
-// lib/services/store_products_service.dart
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-
 import '../combine_model/product_item_model.dart';
 
 
@@ -40,6 +38,9 @@ class StoreProductsService {
 
     final uri = Uri.parse(
         '$_base/get_products_by_store.php?store_id=$storeId&page=$page&limit=$limit');
+
+
+
 
     final res = await _client.get(uri).timeout(const Duration(seconds: 15));
     if (res.statusCode != 200) {

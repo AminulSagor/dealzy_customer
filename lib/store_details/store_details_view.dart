@@ -8,7 +8,7 @@ import 'store_details_controller.dart';
 class StoreDetailsView extends GetView<StoreDetailsController> {
   const StoreDetailsView({super.key});
 
-  static const _radius = 18.0;
+
 
   @override
   Widget build(BuildContext context) {

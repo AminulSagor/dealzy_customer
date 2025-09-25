@@ -181,17 +181,17 @@ class _Header extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = controller;
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(HomeView._pad, 8, HomeView._pad, 6),
       child: Row(
         children: [
           // Left: brand logo image
-          // header - left logo
           Transform(
             alignment: Alignment.centerLeft,
             transform: Matrix4.identity()
-              ..translate(-16.0, 0.0) // ← move 16px to the left
-              ..scale(5.0), // your big scale
+              ..translate(-16.0, 0.0)
+              ..scale(5.0),
             child: Image.asset(
               'assets/png/home_logo.png',
               height: 32,
@@ -201,6 +201,8 @@ class _Header extends StatelessWidget {
           ),
 
           const Spacer(),
+
+          // Right: greeting + location
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
@@ -214,39 +216,67 @@ class _Header extends StatelessWidget {
                     return const Text("Loading...");
                   }
 
-                  final token    = snapshot.data?[0] as String?;
-                  final location = (snapshot.data?[1] as String?) ?? "Detecting...";
+                  if (snapshot.hasError) {
+                    // Don’t block UI on error; still render with fallbacks
+                    debugPrint('Header FutureBuilder error: ${snapshot.error}');
+                  }
 
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text(
-                        "Hello, ${token == null ? 'Guest' : c.username}",
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w600,
-                          color: Colors.black87,
+                  final token    = snapshot.data != null ? snapshot.data![0] as String? : null;
+                  final detected = snapshot.data != null ? snapshot.data![1] as String? : null;
+                  final detectedLocation = detected ?? "Detecting...";
+
+                  // ⚠️ Make it reactive to profile changes (iOS was not rebuilding before)
+                  return Obx(() {
+                    final isLoggedIn = token != null && token.isNotEmpty;
+
+                    // Name comes from controller after profile fetch
+                    final nameFromProfile = c.username.value.trim();
+                    final displayName = isLoggedIn
+                        ? (nameFromProfile.isEmpty ? '...' : nameFromProfile)
+                        : 'Guest';
+
+                    // Location prefers controller value; falls back to detected
+                    final locFromProfile = c.location.value.trim();
+                    final shownLocation = locFromProfile.isEmpty
+                        ? detectedLocation
+                        : locFromProfile;
+
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          "Hello, $displayName",
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w600,
+                            color: Colors.black87,
+                          ),
                         ),
-                      ),
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.location_on_rounded, size: 16, color: HomeController.blue),
-                          const SizedBox(width: 4),
-                          Text(location, style: const TextStyle(color: Colors.black87)),
-                        ],
-                      ),
-                    ],
-                  );
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.location_on_rounded, size: 16, color: HomeController.blue),
+                            const SizedBox(width: 4),
+                            Text(
+                              shownLocation,
+                              style: const TextStyle(color: Colors.black87),
+                            ),
+                          ],
+                        ),
+                        // Separate Text so const Row above is allowed
+
+                      ],
+                    );
+                  });
                 },
               ),
             ],
-          )
-
+          ),
         ],
       ),
     );
   }
 }
+
 
 // ------------- Search (filter inside the bar) -------------
 
