@@ -509,8 +509,23 @@ class _BannerCarousel extends StatelessWidget {
         }
 
         if (c.banners.isEmpty) {
-          return const SizedBox.shrink();
+          return Padding(
+            padding: const EdgeInsets.fromLTRB(HomeView._pad, 4, HomeView._pad, 12),
+            child: AspectRatio(
+              aspectRatio: 16 / 9,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF3F5F7),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Center(
+                  child: Text('No deals right now'),
+                ),
+              ),
+            ),
+          );
         }
+
 
         return Column(
           children: [
