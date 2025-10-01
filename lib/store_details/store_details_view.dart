@@ -26,7 +26,33 @@ class StoreDetailsView extends GetView<StoreDetailsController> {
           tooltip: 'Back',
         ),
         centerTitle: false,
+
+        // 👇 new part
+        actions: [
+          Obx(() => TextButton.icon(
+            onPressed: c.isBlocking.value ? null : c.onBlockSeller,
+            icon: c.isBlocking.value
+                ? const SizedBox(
+                width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                : const Icon(Icons.block, color: Colors.redAccent, size: 20),
+            label: const Text(
+              'Block',
+              style: TextStyle(
+                color: Colors.redAccent,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.redAccent,
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+            ),
+          )),
+        ],
+
       ),
+
+
+
       body: Stack(
         children: [
           // --- Header + info (behind the sheet) ---

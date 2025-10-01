@@ -1,4 +1,3 @@
-// widgets/login_required_dialog.dart
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -28,7 +27,7 @@ class LoginRequiredDialog extends StatelessWidget {
           ),
           onPressed: () {
             Get.back(); // close dialog
-            Get.offAllNamed(AppRoutes.signIn);// navigate to your login screen route
+            Get.toNamed(AppRoutes.signIn);// navigate to your login screen route
           },
           child: const Text(
             'Login',

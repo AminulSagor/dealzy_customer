@@ -30,8 +30,20 @@ class SignInView extends GetView<SignInController> {
 
     return Scaffold(
       backgroundColor: const Color(0xFF124A89),
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF124A89),
+        elevation: 0,
+        systemOverlayStyle: SystemUiOverlayStyle.light,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: Get.back,
+          tooltip: 'Back',
+        ),
+        // title: const Text('Sign In', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+        // centerTitle: true,
+      ),
       body: Padding(
-        padding: EdgeInsets.only(top: 120.h),
+        padding: EdgeInsets.only(top: 60.h),
         child: SafeArea(
           child: SingleChildScrollView(
             padding: EdgeInsets.symmetric(horizontal: 16.w),

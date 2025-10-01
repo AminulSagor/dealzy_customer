@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-
+import 'package:url_launcher/url_launcher.dart';
+import '../terms_and_condition/user_agreement_page.dart';
 import 'app_setting_controller.dart';
 
 /// Lightweight design system for consistent color, spacing, and type.
@@ -181,7 +183,35 @@ class AppSettingView extends GetView<AppSettingController> {
 
               DS.gap24,
               Divider(color: DS.divider, height: 1),
+              DS.gap8,
+              Container(
+                decoration: DS.card,
+                padding: EdgeInsets.all(4.w),
+                child: Column(
+                  children: [
+                    // About App -> navigate to EULA/Terms page
+                    ListTile(
+                      contentPadding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 4.h),
+                      leading: const Icon(Icons.info_outline_rounded, color: DS.primary),
+                      title: const Text('About App', style: TextStyle(fontWeight: FontWeight.w700)),
+                      subtitle: const Text('Version 1.0 • Terms & EULA'),
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: () => Get.to(() => const DealzyloopUserAgreementPage()),
+                    ),
+                    const Divider(height: 1, color: DS.divider),
 
+                    // Contact Support -> mailto support@dealzyloop.com
+                    ListTile(
+                      contentPadding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 4.h),
+                      leading: const Icon(Icons.email_outlined, color: DS.primary),
+                      title: const Text('Contact Support', style: TextStyle(fontWeight: FontWeight.w700)),
+                      subtitle: const Text('support@dealzyloop.com'),
+                      trailing: const Icon(Icons.open_in_new),
+                      onTap: () => _openSupportEmail(context),
+                    ),
+                  ],
+                ),
+              ),
               // Danger Zone
               DS.gap24,
               Text('Danger Zone', style: DS.h6),
@@ -190,25 +220,8 @@ class AppSettingView extends GetView<AppSettingController> {
                 decoration: DS.card,
                 padding: EdgeInsets.all(16.w),
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    _DestructiveActionTile(
-                      icon: Icons.delete_forever,
-                      title: 'Delete Profile',
-                      description: 'Permanently remove your profile data. This action cannot be undone.',
-                      onPressed: () async {
-                        final expectedName = controller.profileName.value.trim();
-                        final ok = await Get.dialog<bool>(
-                          ConfirmDeleteDialog(expectedName: expectedName),
-                          barrierDismissible: false,
-                        );
-                        if (ok == true) {
-                          await controller.deleteProfileConfirmed(context);
-                        }
-
-                      },
-                    ),
-                    const Divider(height: 24),
                     _NeutralActionTile(
                       icon: Icons.logout_rounded,
                       title: 'Log Out',
@@ -234,6 +247,23 @@ class AppSettingView extends GetView<AppSettingController> {
                         if (ok == true) {
                           await controller.performLogout();
                         }
+                      },
+                    ),
+                    const Divider(height: 24),
+                    _DestructiveActionTile(
+                      icon: Icons.delete_forever,
+                      title: 'Delete Profile',
+                      description: 'Permanently remove your profile data. This action cannot be undone.',
+                      onPressed: () async {
+                        final expectedName = controller.profileName.value.trim();
+                        final ok = await Get.dialog<bool>(
+                          ConfirmDeleteDialog(expectedName: expectedName),
+                          barrierDismissible: false,
+                        );
+                        if (ok == true) {
+                          await controller.deleteProfileConfirmed(context);
+                        }
+
                       },
                     ),
                   ],
@@ -473,7 +503,8 @@ class _NeutralActionTile extends StatelessWidget {
                   fontSize: 14.sp,
                 ),
               ),
-              DS.gap4,
+
+
               Text(description, style: const TextStyle(color: DS.textSecondary)),
               DS.gap12,
               Align(
@@ -657,7 +688,33 @@ class _ConfirmDeleteDialogState extends State<ConfirmDeleteDialog> {
     FocusScope.of(context).unfocus();
     Navigator.of(context).pop(true);
   }
+
+
 }
+
+
+Future<void> _openSupportEmail(BuildContext context, {String email = 'support@dealzyloop.com'}) async {
+  final uri = Uri(
+    scheme: 'mailto',
+    path: email,
+    query: Uri(queryParameters: {
+      'subject': 'Dealzyloop Support',
+      // 'body': 'Describe your issue here...'
+    }).query,
+  );
+  final can = await canLaunchUrl(uri);
+  if (can) {
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
+  } else {
+    await Clipboard.setData(ClipboardData(text: email));
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Couldn’t open email app. Address copied.')),
+      );
+    }
+  }
+}
+
 
 /// --- Small info card used in the dialog ---
 class _InfoCard extends StatelessWidget {

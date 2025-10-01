@@ -7,7 +7,7 @@ import 'combine_service/connection_service.dart';
 import 'combine_service/push_service.dart';
 import 'routes/app_pages.dart';
 import 'routes/app_routes.dart';
-import 'storage/first_launch_storage.dart'; // <-- add this
+import 'storage/first_launch_storage.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();

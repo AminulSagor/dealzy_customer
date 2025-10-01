@@ -66,4 +66,5 @@ class StoreProductsService {
   void dispose() {
     _client.close();
   }
+
 }

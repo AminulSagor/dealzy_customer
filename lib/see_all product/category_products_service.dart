@@ -4,6 +4,8 @@ import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 
+import '../storage/token_storage.dart';
+
 /// One product row from GET /get_products_by_category.php
 class CategoryProduct {
   final String id;
@@ -11,6 +13,7 @@ class CategoryProduct {
   final String image;
   final double price;
   final double? offerPrice;
+  final String? sellerId;
 
   const CategoryProduct({
     required this.id,
@@ -18,6 +21,7 @@ class CategoryProduct {
     required this.image,
     required this.price,
     this.offerPrice,
+    this.sellerId,
   });
 
   factory CategoryProduct.fromJson(Map<String, dynamic> j) {
@@ -35,6 +39,7 @@ class CategoryProduct {
       image: (j['image_path'] ?? '').toString(),
       price: _tryDouble(j['price']) ?? 0.0,
       offerPrice: _tryDouble(j['offer_price']),
+      sellerId: j['seller_id']?.toString(),
     );
   }
 }
@@ -81,6 +86,15 @@ class CategoryProductsService {
 
   final String _base;
 
+  /// Helper to build headers dynamically with token if available
+  Future<Map<String, String>> _buildHeaders() async {
+    final token = await TokenStorage.getToken();
+    return <String, String>{
+      'Accept': 'application/json',
+      if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
+    };
+  }
+
   /// GET /get_products_by_category.php?category_id=..&page=..&limit=..
   Future<CategoryProductsPage> fetchProductsByCategory({
     required String categoryId,
@@ -98,24 +112,9 @@ class CategoryProductsService {
       '$_base/get_products_by_category.php?category_id=$categoryId&page=$page&limit=$limit',
     );
 
-    final headers = <String, String>{
-      'Accept': 'application/json',
-    }; // NO AUTH
-
-    if (kDebugMode) {
-      debugPrint('⇢ GET $uri');
-    }
+    final headers = await _buildHeaders();
 
     final res = await http.get(uri, headers: headers).timeout(const Duration(seconds: 20));
-
-    if (kDebugMode) {
-      debugPrint('⇠ ${res.statusCode} ${res.reasonPhrase}');
-      try {
-        debugPrint(const JsonEncoder.withIndent('  ').convert(jsonDecode(res.body)));
-      } catch (_) {
-        debugPrint(res.body);
-      }
-    }
 
     if (res.statusCode != 200) {
       throw Exception('HTTP ${res.statusCode}: ${res.reasonPhrase}');
@@ -129,7 +128,6 @@ class CategoryProductsService {
     }
     return pageObj;
   }
-
 
   Future<CategoryProductsPage> searchProducts({
     required String keyword,
@@ -155,7 +153,7 @@ class CategoryProductsService {
       '$_base/search_products.php?keyword=${Uri.encodeQueryComponent(q)}&page=$page&limit=$limit',
     );
 
-    final headers = <String, String>{'Accept': 'application/json'};
+    final headers = await _buildHeaders();
 
     if (kDebugMode) debugPrint('⇢ GET $uri');
     final res = await http.get(uri, headers: headers).timeout(const Duration(seconds: 20));
@@ -178,9 +176,5 @@ class CategoryProductsService {
       throw Exception('Failed to search products');
     }
     return pageObj;
-  }
-
-  void dispose() {
-    // keep for parity / future cleanup needs
   }
 }

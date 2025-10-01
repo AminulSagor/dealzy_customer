@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:dealzy/storage/token_storage.dart';
@@ -47,24 +46,13 @@ class BookmarkService {
       'product_id': int.tryParse(productId) ?? productId,
     });
 
-    if (kDebugMode) {
-      debugPrint('⇢ POST $uri');
-      debugPrint('Headers: Authorization: Bearer ***');
-      debugPrint('Body: $body');
-    }
+
 
     final res = await http
         .post(uri, headers: headers, body: body)
         .timeout(const Duration(seconds: 20));
 
-    if (kDebugMode) {
-      debugPrint('⇠ ${res.statusCode} ${res.reasonPhrase}');
-      try {
-        debugPrint(const JsonEncoder.withIndent('  ').convert(jsonDecode(res.body)));
-      } catch (_) {
-        debugPrint(res.body);
-      }
-    }
+
 
     if (res.statusCode != 200) {
       throw Exception('HTTP ${res.statusCode}: ${res.reasonPhrase}');

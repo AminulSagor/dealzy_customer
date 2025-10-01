@@ -1,4 +1,3 @@
-// user_profile_controller.dart
 import 'package:dealzy/user_profile/user_profile_service.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -40,7 +39,7 @@ class UserProfileController extends GetxController {
   // Profile (reactive; start with sensible defaults)
   final name = '—'.obs;
   final location = '—'.obs;
-  final avatar = 'assets/png/searching_image.png'.obs;
+  final avatar = ''.obs;
 
   // Collection: bookmarks from API
   final RxList<ProductItem> collection = <ProductItem>[].obs;

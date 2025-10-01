@@ -1,4 +1,3 @@
-// models/product_details_models.dart
 import 'package:meta/meta.dart';
 
 @immutable
@@ -29,6 +28,7 @@ class ProductDetailsData {
   final String model;
   final String brand;
 
+
   /// Regular price from API
   final double price;
 
@@ -54,6 +54,8 @@ class ProductDetailsData {
   /// Business hours (raw from API, e.g. "22:56:00")
   final String? openingTime;  // maps from `opening_time`
   final String? closingTime;  // maps from `closing_time`
+  final String? proPath;
+
 
   final List<String> images;
   final List<ColorOption> colors;
@@ -80,6 +82,8 @@ class ProductDetailsData {
     required this.variants,
     this.openingTime,
     this.closingTime,
+    this.proPath,
+
   });
 
   // ---------- Computed helpers ----------
@@ -150,13 +154,13 @@ class ProductDetailsData {
       storeType:  d['store_type']?.toString() ?? '-',
       address:    d['address']?.toString() ?? '-',
       phone:      d['phone']?.toString() ?? '-',
-      images:     imgs.isEmpty
-          ? const ['https://via.placeholder.com/800x800?text=No+Image']
-          : imgs,
+      images: imgs.isEmpty ? [] : imgs,
       colors:     cols,
       variants:   vars,
       openingTime: opening?.trim(),
       closingTime: closing?.trim(),
+      proPath: (d['pro_path'] ?? '').toString(),
+
     );
   }
 
@@ -164,7 +168,7 @@ class ProductDetailsData {
 
   static String _toHHmm(String? raw) {
     final t = (raw ?? '').trim();
-    if (t.isEmpty) return '10:00'; // safe fallback if API missing
+    if (t.isEmpty) return ''; // safe fallback if API missing
     final parts = t.split(':');
     final h = int.tryParse(parts[0]) ?? 10;
     final m = int.tryParse(parts.length > 1 ? parts[1] : '0') ?? 0;

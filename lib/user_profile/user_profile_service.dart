@@ -1,7 +1,6 @@
-// lib/services/user_profile_service.dart
 import 'dart:convert';
 import 'dart:io';
-import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
+
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:dealzy/storage/token_storage.dart';
@@ -130,21 +129,11 @@ class UserProfileService {
       'Accept': 'application/json',
     };
 
-    if (kDebugMode) {
-      debugPrint('⇢ GET $uri');
-      debugPrint('Headers: Authorization: Bearer ***');
-    }
+
 
     final res = await http.get(uri, headers: headers).timeout(const Duration(seconds: 20));
 
-    if (kDebugMode) {
-      debugPrint('⇠ ${res.statusCode} ${res.reasonPhrase}');
-      try {
-        debugPrint(const JsonEncoder.withIndent('  ').convert(jsonDecode(res.body)));
-      } catch (_) {
-        debugPrint(res.body);
-      }
-    }
+
 
     if (res.statusCode != 200) {
       throw Exception('HTTP ${res.statusCode}: ${res.reasonPhrase}');
@@ -179,21 +168,12 @@ class UserProfileService {
       'Accept': 'application/json',
     };
 
-    if (kDebugMode) {
-      debugPrint('⇢ GET $uri');
-      debugPrint('Headers: Authorization: Bearer ***');
-    }
+
 
     final res = await http.get(uri, headers: headers).timeout(const Duration(seconds: 20));
 
-    if (kDebugMode) {
-      debugPrint('⇠ ${res.statusCode} ${res.reasonPhrase}');
-      try {
-        debugPrint(const JsonEncoder.withIndent('  ').convert(jsonDecode(res.body)));
-      } catch (_) {
-        debugPrint(res.body);
-      }
-    }
+
+
 
     if (res.statusCode != 200) {
       throw Exception('HTTP ${res.statusCode}: ${res.reasonPhrase}');
@@ -227,24 +207,11 @@ class UserProfileService {
     };
     final body = jsonEncode({'product_id': int.tryParse(productId) ?? productId});
 
-    if (kDebugMode) {
-      debugPrint('⇢ DELETE $uri');
-      debugPrint('Headers: Authorization: Bearer $token');
-      debugPrint('Body: $body');
-    }
 
     final res = await http
         .delete(uri, headers: headers, body: body)
         .timeout(const Duration(seconds: 20));
 
-    if (kDebugMode) {
-      debugPrint('⇠ ${res.statusCode} ${res.reasonPhrase}');
-      try {
-        debugPrint(const JsonEncoder.withIndent('  ').convert(jsonDecode(res.body)));
-      } catch (_) {
-        debugPrint(res.body);
-      }
-    }
 
     if (res.statusCode != 200) {
       throw Exception('HTTP ${res.statusCode}: ${res.reasonPhrase}');
@@ -294,12 +261,7 @@ class UserProfileService {
     final streamed = await req.send().timeout(const Duration(seconds: 30));
     final res = await http.Response.fromStream(streamed);
 
-    if (kDebugMode) {
-      debugPrint('⇠ ${res.statusCode} ${res.reasonPhrase}');
-      try {
-        debugPrint(const JsonEncoder.withIndent('  ').convert(jsonDecode(res.body)));
-      } catch (_) {}
-    }
+
 
     if (res.statusCode != 200) {
       throw Exception('HTTP ${res.statusCode}: ${res.reasonPhrase}');

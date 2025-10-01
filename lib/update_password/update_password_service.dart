@@ -11,9 +11,7 @@ class UpdatePasswordService {
   final String _baseUrl;
   static const _timeout = Duration(seconds: 20);
 
-  /// POST /reset_password.php
-  /// Headers: { otp: <OTP> }
-  /// Body   : { "email": "...", "password": "..." }
+
   Future<Map<String, dynamic>> updatePassword({
     required String email,
     required String password,

@@ -4,7 +4,12 @@ import 'package:get/get.dart';
 
 import '../combine_model/product_item_model.dart' show ProductItem;
 import 'package:dealzy/store_details/store_products_service.dart';
-import 'package:dealzy/combine_service/bookmark_service.dart'; // <-- import your BookmarkService
+import 'package:dealzy/combine_service/bookmark_service.dart';
+
+import '../routes/app_routes.dart';
+import '../storage/token_storage.dart';
+import '../widgets/login_required_dialog.dart';
+import 'block_seller_service.dart'; // <-- import your BookmarkService
 
 // If StoreInfo is in another file, import it instead of redefining here.
 class StoreInfo {
@@ -33,8 +38,10 @@ class StoreDetailsController extends GetxController {
   StoreDetailsController({
     StoreProductsService? service,
     BookmarkService? bookmarkService,
+    BlockSellerService? blockSellerService, // <-- new optional dep
   })  : _service = service ?? StoreProductsService(),
-        _bookmarkService = bookmarkService ?? BookmarkService();
+        _bookmarkService = bookmarkService ?? BookmarkService(),
+        _blockService = blockSellerService ?? BlockSellerService();
 
   // Theme
   static const blue = Color(0xFF124A89);
@@ -54,6 +61,9 @@ class StoreDetailsController extends GetxController {
   // Data
   late final StoreInfo store;
   final products = <ProductItem>[].obs;
+
+  final BlockSellerService _blockService;        // <-- new
+  final isBlocking = false.obs;                  // <-- new spinner/lock
 
   // Loading / pagination
   final isLoading = false.obs;
@@ -166,6 +176,7 @@ class StoreDetailsController extends GetxController {
     sheetCtrl.removeListener(_sheetListener);
     sheetCtrl.dispose();
     _service.dispose();
+    _blockService.dispose();
     super.onClose();
   }
 
@@ -209,10 +220,69 @@ class StoreDetailsController extends GetxController {
     }
   }
 
+  Future<void> onBlockSeller() async {
+    if (isBlocking.value) return;
+
+    // 0) Confirm
+    final confirmed = await Get.dialog<bool>(
+      AlertDialog(
+        title: const Text('Block this seller?'),
+        content: const Text(
+          'If you block this seller, you will not see products from this seller.',
+        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        actions: [
+          TextButton(onPressed: () => Get.back(result: false), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () => Get.back(result: true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+            child: const Text('Block'),
+          ),
+        ],
+      ),
+      barrierDismissible: false,
+    ) ?? false;
+
+    if (!confirmed) return;
+
+    // 1) Auth
+    final token = await TokenStorage.getToken();
+    if (token == null || token.isEmpty) {
+      await Get.dialog(const LoginRequiredDialog(), barrierDismissible: false);
+      return;
+    }
+
+    isBlocking.value = true;
+    try {
+      // 2) API
+      final resp = await _blockService.blockSeller(sellerId: store.id, token: token);
+
+      // 3) Result
+      final success = (resp['success'] == true) || (resp['status'] == 'success');
+      final message = (resp['message'] ?? 'Seller blocked').toString();
+
+      if (success) {
+
+        // 4) Navigate home and clear back stack
+        Get.offAllNamed(AppRoutes.home);
+      } else {
+        Get.snackbar('Block failed', message.isEmpty ? 'Unable to block seller.' : message,
+            snackPosition: SnackPosition.TOP, backgroundColor: Colors.red.shade200);
+      }
+    } catch (e) {
+      Get.snackbar('Error', e.toString(), snackPosition: SnackPosition.TOP, backgroundColor: Colors.red.shade200);
+    } finally {
+      isBlocking.value = false;
+    }
+  }
+
+
+
+
   // -------- Private helpers --------
   String _normTime(String raw) {
     final t = raw.trim();
-    if (t.isEmpty) return '10:00';
+    if (t.isEmpty) return '';
     final p = t.split(':');
     final h = int.tryParse(p[0]) ?? 10;
     final m = int.tryParse(p.length > 1 ? p[1] : '0') ?? 0;

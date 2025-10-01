@@ -1,22 +1,17 @@
-// lib/modules/auth/update_password/update_password_view.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import '../../../routes/app_routes.dart';
 import 'update_password_controller.dart';
 
-// lib/modules/auth/update_password/update_password_view.dart
-// …imports stay same…
 
-// ...unchanged imports...
 
 class UpdatePasswordView extends GetView<UpdatePasswordController> {
   const UpdatePasswordView({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final isKbOpen = MediaQuery.of(context).viewInsets.bottom > 0;
+
 
     return Scaffold(
       resizeToAvoidBottomInset: true,

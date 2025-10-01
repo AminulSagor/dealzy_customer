@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 
@@ -45,21 +44,11 @@ class LogoutService {
       'Accept': 'application/json',
     };
 
-    if (kDebugMode) {
-      debugPrint('⇢ DELETE $uri');
-      debugPrint('Headers: Authorization: Bearer ***');
-    }
+
 
     final res = await http.delete(uri, headers: headers).timeout(const Duration(seconds: 20));
 
-    if (kDebugMode) {
-      debugPrint('⇠ ${res.statusCode} ${res.reasonPhrase}');
-      try {
-        debugPrint(const JsonEncoder.withIndent('  ').convert(jsonDecode(res.body)));
-      } catch (_) {
-        debugPrint(res.body);
-      }
-    }
+
 
     if (res.statusCode != 200) {
       throw Exception('HTTP ${res.statusCode}: ${res.reasonPhrase}');

@@ -58,6 +58,7 @@ class HomeView extends GetView<HomeController> {
 
                 return _Section(
                   title: 'Regular Offer',
+                  showSeeAll: items.isNotEmpty,
                   onSeeAll: () => c.onTapSeeAll('Regular Offer'),
                   child: _sectionBody(
                     isLoading: isLoading,
@@ -81,6 +82,7 @@ class HomeView extends GetView<HomeController> {
 
                 return _Section(
                   title: 'Expiring Offer',
+                  showSeeAll: items.isNotEmpty,
                   onSeeAll: () => c.onTapSeeAll('Expiring Offer'),
                   child: _sectionBody(
                     isLoading: isLoading,
@@ -104,6 +106,7 @@ class HomeView extends GetView<HomeController> {
 
                 return _Section(
                   title: 'Clearance Offer',
+                  showSeeAll: items.isNotEmpty,
                   onSeeAll: () => c.onTapSeeAll('Clearance Offer'),
                   child: _sectionBody(
                     isLoading: isLoading,
@@ -127,6 +130,7 @@ class HomeView extends GetView<HomeController> {
 
                 return _Section(
                   title: 'Seasonal Offer',
+                  showSeeAll: items.isNotEmpty,
                   onSeeAll: () => c.onTapSeeAll('Seasonal Offer'),
                   child: _sectionBody(
                     isLoading: isLoading,
@@ -150,6 +154,7 @@ class HomeView extends GetView<HomeController> {
 
                 return _Section(
                   title: 'Service Special Offer',
+                  showSeeAll: items.isNotEmpty,
                   onSeeAll: () => c.onTapSeeAll('Service Special Offer'),
                   child: _sectionBody(
                     isLoading: isLoading,
@@ -216,10 +221,7 @@ class _Header extends StatelessWidget {
                     return const Text("Loading...");
                   }
 
-                  if (snapshot.hasError) {
-                    // Don’t block UI on error; still render with fallbacks
-                    debugPrint('Header FutureBuilder error: ${snapshot.error}');
-                  }
+
 
                   final token    = snapshot.data != null ? snapshot.data![0] as String? : null;
                   final detected = snapshot.data != null ? snapshot.data![1] as String? : null;
@@ -717,11 +719,13 @@ class _Section extends StatelessWidget {
     required this.title,
     required this.child,
     required this.onSeeAll,
+    this.showSeeAll = true,
   });
 
   final String title;
   final Widget child;
   final VoidCallback onSeeAll;
+  final bool showSeeAll;
 
   @override
   Widget build(BuildContext context) {
@@ -746,17 +750,19 @@ class _Section extends StatelessWidget {
                   ),
                 ),
                 const Spacer(),
-                InkWell(
-                  onTap: onSeeAll,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: const [
-                      Text('See All'),
-                      SizedBox(width: 4),
-                      Icon(Icons.chevron_right, size: 18),
-                    ],
+
+                if (showSeeAll)
+                  InkWell(
+                    onTap: onSeeAll,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: const [
+                        Text('See All'),
+                        SizedBox(width: 4),
+                        Icon(Icons.chevron_right, size: 18),
+                      ],
+                    ),
                   ),
-                ),
               ],
             ),
           ),

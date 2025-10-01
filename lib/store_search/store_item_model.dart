@@ -1,4 +1,4 @@
-// store_item.dart
+
 class StoreItem {
   final String id;
   final String name;
@@ -29,7 +29,7 @@ class StoreItem {
       image: json['image_path']?.toString() ?? '',
       opening: json['opening_time']?.toString() ?? '',
       closing: json['closing_time']?.toString() ?? '',
-      phone: json['phone']?.toString() ?? '', // add if your API returns phone
+      phone: json['phone']?.toString() ?? '',
     );
   }
 

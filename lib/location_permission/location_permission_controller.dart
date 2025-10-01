@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
@@ -16,7 +15,6 @@ class LocationPermissionController extends GetxController {
     try {
       // --- Service check
       final serviceEnabled = await Geolocator.isLocationServiceEnabled();
-      debugPrint('Location service enabled: $serviceEnabled');
       if (!serviceEnabled) {
         Get.snackbar('Location disabled', 'Please enable Location services.');
         return;
@@ -24,11 +22,10 @@ class LocationPermissionController extends GetxController {
 
       // --- Permission check
       LocationPermission permission = await Geolocator.checkPermission();
-      debugPrint('Initial permission: $permission');
+
 
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
-        debugPrint('Requested permission → $permission');
       }
       if (permission == LocationPermission.denied) {
         Get.snackbar('Permission denied', 'Location is required to show nearby deals.');
@@ -48,7 +45,7 @@ class LocationPermissionController extends GetxController {
           timeLimit: const Duration(seconds: 10),
         );
       } on TimeoutException catch (_) {
-        debugPrint('getCurrentPosition timed out, trying last known position...');
+
         pos = await Geolocator.getLastKnownPosition();
       }
 
@@ -59,18 +56,12 @@ class LocationPermissionController extends GetxController {
 
       final double latitude = pos.latitude;
       final double longitude = pos.longitude;
-      debugPrint('Position → lat: $latitude, lng: $longitude, acc: ${pos.accuracy}');
+
 
       // --- Reverse geocoding (robust)
       final resolved = await _resolveAddress(latitude, longitude);
 
-      debugPrint(
-        'Placemark(best) → '
-            'country: ${resolved.country}, iso: ${resolved.iso}, '
-            'division(admin): ${resolved.admin}, district(subAdmin): ${resolved.district}, '
-            'locality: ${resolved.locality}, subLocality: ${resolved.subLocality}, '
-            'postalCode: ${resolved.postal}, street: ${resolved.street}',
-      );
+
 
       // --- Build arguments for next screen
       final args = <String, dynamic>{
@@ -81,12 +72,10 @@ class LocationPermissionController extends GetxController {
         'district': resolved.district,            // e.g., Dhaka
         'city': resolved.locality,                // optional extra context
       };
-      debugPrint('Navigating with args: $args');
 
       // --- Navigate
       Get.offAllNamed(AppRoutes.signUp, arguments: args);
     } catch (e, st) {
-      debugPrint('requestLocation error: $e\n$st');
       Get.snackbar('Error', e.toString());
     } finally {
       isBusy.value = false;
@@ -112,7 +101,6 @@ class LocationPermissionController extends GetxController {
         }
       }
     } catch (e) {
-      debugPrint('Reverse geocoding failed: $e');
     }
 
     if (marks.isEmpty) {
@@ -142,16 +130,11 @@ class LocationPermissionController extends GetxController {
 
   void _debugList(String tag, List<Placemark> list) {
     if (list.isEmpty) {
-      debugPrint('[$tag] placemarks: (empty)');
       return;
     }
     for (var i = 0; i < list.length; i++) {
       final p = list[i];
-      debugPrint('[$tag][$i] '
-          'country=${p.country}, iso=${p.isoCountryCode}, '
-          'admin=${p.administrativeArea}, subAdmin=${p.subAdministrativeArea}, '
-          'locality=${p.locality}, subLocality=${p.subLocality}, '
-          'postal=${p.postalCode}, street=${p.street}');
+
     }
   }
 }

@@ -1,16 +1,20 @@
-// lib/services/home_service.dart
+
 import 'dart:convert';
 import 'package:dealzy/home/slider_model.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
-
+import '../storage/token_storage.dart';
 import 'category_model.dart';
 import '../home/home_products_model.dart'; // ← add this import (adjust path if needed)
 
 class HomeService {
   HomeService({
     http.Client? client,
-    this.baseUrl = 'https://dealzyloop.com/api',
-  }) : _client = client ?? http.Client();
+    String? baseUrl,
+  })  : _client = client ?? http.Client(),
+        baseUrl = (baseUrl ??
+            dotenv.env['API_BASE_URL'] ?? '')
+            .replaceAll(RegExp(r'/+$'), '');
 
   final http.Client _client;
   final String baseUrl;
@@ -70,8 +74,17 @@ class HomeService {
       '$baseUrl/home_page_products.php?offer=$offer&page=$page&limit=$limit',
     );
 
+    // look up token inside the function
+    final token = await TokenStorage.getToken();
+
+    // build headers dynamically
+    final headers = <String, String>{
+      'Accept': 'application/json',
+      if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
+    };
+
     final res = await _client
-        .get(uri, headers: {'Accept': 'application/json'})
+        .get(uri, headers: headers)
         .timeout(const Duration(seconds: 15));
 
     if (res.statusCode != 200) {
@@ -87,6 +100,7 @@ class HomeService {
 
     return parsed;
   }
+
   // ***************************************************
 
   void dispose() {

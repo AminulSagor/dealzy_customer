@@ -22,13 +22,7 @@ class SignupService {
       ),
     );
 
-    // Optional: enable logging during development
-    _dio.interceptors.add(LogInterceptor(
-      request: true,
-      requestBody: true,
-      responseBody: true,
-      error: true,
-    ));
+
   }
 
   /// POST /user_reg.php

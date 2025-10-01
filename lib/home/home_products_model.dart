@@ -5,6 +5,7 @@ class HomeProductDto {
   final String? offerPrice; // nullable
   final String? expiryDate; // nullable (ISO or null)
   final String imagePath;
+  final String? sellerId;
 
   HomeProductDto({
     required this.id,
@@ -13,6 +14,7 @@ class HomeProductDto {
     required this.offerPrice,
     required this.expiryDate,
     required this.imagePath,
+    this.sellerId,
   });
 
   factory HomeProductDto.fromJson(Map<String, dynamic> j) => HomeProductDto(
@@ -22,6 +24,7 @@ class HomeProductDto {
     offerPrice: j['offer_price']?.toString(),
     expiryDate: j['expiry_date']?.toString(),
     imagePath: j['image_path']?.toString() ?? '',
+    sellerId: j['seller_id']?.toString(),
   );
 }
 

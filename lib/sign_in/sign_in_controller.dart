@@ -39,7 +39,6 @@ class SignInController extends GetxController {
   Future<void> submit() async {
     if (isBusy.value) return;
 
-    // Validate form
     final isFormValid = formKey.currentState?.validate() ?? false;
     if (!isFormValid) {
       _revalidate();
@@ -48,10 +47,8 @@ class SignInController extends GetxController {
 
     isBusy.value = true;
     try {
-      // Normalize phone: keep digits only
       final normalizedPhone = phoneCtrl.text.replaceAll(RegExp(r'\D'), '');
 
-      // Call API
       final r = await _loginService.login(
         phone: normalizedPhone,
         password: passwordCtrl.text.trim(),
@@ -62,19 +59,17 @@ class SignInController extends GetxController {
         return;
       }
 
-      // Extract user payload
       final u     = r.user;
       final token = (u?['token'] ?? '').toString().trim();
-      final name  = (u?['name']  ?? '').toString().trim();
-
-      // Ensure token exists
       if (token.isEmpty) {
         Get.snackbar('Login', 'Missing token in response.');
         return;
       }
 
-      // Persist token
+      // 1) Save token only
       await TokenStorage.saveToken(token);
+
+      // 2) Go home
       Get.offAllNamed(AppRoutes.home);
     } on DioException catch (e) {
       final msg = e.response?.data?.toString() ?? e.message ?? 'Network error';
@@ -85,6 +80,8 @@ class SignInController extends GetxController {
       isBusy.value = false;
     }
   }
+
+
 
 
   // ---------- lifecycle ----------

@@ -132,9 +132,11 @@ class AppPages {
       name: AppRoutes.home,
       page: () => const HomeView(),
       binding: BindingsBuilder(() {
-        Get.put(HomeController());
+        // A brand-new instance every time this route is (re)entered
+        Get.create<HomeController>(() => HomeController());
       }),
     ),
+
 
 
     GetPage(

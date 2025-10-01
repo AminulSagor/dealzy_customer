@@ -1,8 +1,10 @@
-// controllers/product_details_controller.dart
+
 import 'package:dealzy/product_details/product_service.dart';
+import 'package:dealzy/product_details/report_service.dart'; // <-- keep this
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../combine_service/bookmark_service.dart';
+import '../storage/token_storage.dart';
 import '../widgets/login_required_dialog.dart';
 
 class PDStoreInfo {
@@ -12,8 +14,9 @@ class PDStoreInfo {
     required this.category,
     required this.address,
     required this.phone,
-    required this.openTime, // "HH:mm"
-    required this.closeTime, // "HH:mm"
+    required this.openTime,
+    required this.closeTime,
+    this.photoUrl,
   });
 
   final String name;
@@ -23,6 +26,7 @@ class PDStoreInfo {
   final String phone;
   final String openTime;
   final String closeTime;
+  final String? photoUrl;
 }
 
 class PDReview {
@@ -60,14 +64,14 @@ class ProductDetails {
   final String title;
   final String brand;
   final String model;
-  final String color;      // comma-joined colors from API
-  final String sizeText;   // comma-joined variants from API
+  final String color;
+  final String sizeText;
   final String category;
   final String availabilityText;
   final List<String> images;
   final double mrp;
-  final double offerPrice; // if no discount, same as mrp
-  final double rating;     // not in API ⇒ keep 0 or compute later
+  final double offerPrice;
+  final double rating;
   final String description;
 }
 
@@ -76,14 +80,13 @@ class ProductDetailsController extends GetxController {
     ProductService? service,
     String? productId,
     BookmarkService? bookmarkService,
+    ReportService? reportService,                 // <-- allow DI (optional)
   })  : _service = service ?? ProductService(),
         _bookmark = bookmarkService ?? BookmarkService(),
+        _reportService = reportService ?? ReportService(), // <-- init here
         _productId = productId ??
-            // 1) path like /product-details/:id
             (Get.parameters['id'] ??
-                // 2) query like /product-details?product_id=4
                 Get.parameters['product_id'] ??
-                // 3) Get.arguments = {'product_id': 4} or 4
                 (() {
                   final a = Get.arguments;
                   if (a is Map && a['product_id'] != null) return a['product_id'].toString();
@@ -95,6 +98,7 @@ class ProductDetailsController extends GetxController {
 
   final ProductService _service;
   final BookmarkService _bookmark;
+  final ReportService _reportService;            // <-- field
   final String _productId;
 
   // state
@@ -114,6 +118,13 @@ class ProductDetailsController extends GetxController {
   // bookmarking
   final isBookmarking = false.obs;
 
+  // reporting
+  final isReporting = false.obs;
+  // at top of HomeController
+  final isLoggedIn = false.obs;
+  final blockedSellerIds = <String>{}.obs;
+
+
   void toggleDesc() => descExpanded.toggle();
   void toggleFirstReview() => firstReviewExpanded.toggle();
 
@@ -123,9 +134,7 @@ class ProductDetailsController extends GetxController {
 
     try {
       isBookmarking.value = true;
-
       final res = await _bookmark.bookmarkProduct(product.id);
-
       Get.snackbar(
         'Saved',
         res.message.isNotEmpty ? res.message : 'Bookmarked this product',
@@ -136,7 +145,6 @@ class ProductDetailsController extends GetxController {
         duration: const Duration(seconds: 2),
       );
     } on StateError catch (e) {
-      // check if the error is about missing token
       if (e.message.contains('Missing token')) {
         Get.dialog(const LoginRequiredDialog(), barrierDismissible: false);
       } else {
@@ -163,16 +171,75 @@ class ProductDetailsController extends GetxController {
     }
   }
 
+  // ✅ Use ReportService instead of raw http
+  Future<void> reportProduct(String message) async {
+    if (isReporting.value) return;
+    if (product.id.isEmpty) {
+      Get.snackbar(
+        'Report',
+        'Missing product id',
+        snackPosition: SnackPosition.TOP,
+        backgroundColor: Colors.orange.shade700,
+        colorText: Colors.white,
+      );
+      return;
+    }
 
+    final token = await TokenStorage.getToken();
+    if (token == null || token.isEmpty) {
+      Get.dialog(const LoginRequiredDialog(), barrierDismissible: false);
+      return;
+    }
 
+    try {
+      isReporting.value = true;
 
+      final resp = await _reportService.reportProduct(
+        productId: product.id,
+        reportText: message,
+        token: token, // ✅ pass token here
+      );
+
+      final status = (resp['status'] ?? '').toString().toLowerCase();
+
+      if (status == 'success') {
+        Get.snackbar(
+          'Report sent',
+          'Thanks. We’ll review within 24 hours and take appropriate action.',
+          snackPosition: SnackPosition.TOP,
+          backgroundColor: Colors.green.shade600, // ✅ green background
+          colorText: Colors.white,                // white text
+          margin: const EdgeInsets.all(12),
+          duration: const Duration(seconds: 3),
+        );
+      } else {
+        Get.snackbar(
+          'Report failed',
+          'Please try again in a moment.',
+          snackPosition: SnackPosition.TOP,
+          backgroundColor: Colors.red.shade700,   // red background for failure
+          colorText: Colors.white,
+          margin: const EdgeInsets.all(12),
+        );
+      }
+    } catch (e) {
+      Get.snackbar(
+        'Report failed',
+        e.toString(),
+        snackPosition: SnackPosition.TOP,
+        backgroundColor: Colors.red.shade700,
+        colorText: Colors.white,
+      );
+    } finally {
+      isReporting.value = false;
+    }
+  }
 
   bool get isOpenNow {
     final now = DateTime.now();
     final open = _parseToday(store.openTime);
     final close = _parseToday(store.closeTime);
     if (close.isBefore(open)) {
-      // overnight schedule
       return now.isAfter(open) || now.isBefore(close.add(const Duration(days: 1)));
     }
     return now.isAfter(open) && now.isBefore(close);
@@ -203,20 +270,19 @@ class ProductDetailsController extends GetxController {
 
       final api = await _service.fetchDetails(_productId);
 
-      // Map API model -> UI model your widgets already use
       product = ProductDetails(
         id: api.id,
         title: api.name,
         brand: api.brand,
         model: api.model,
-        color: api.colorOneLine,              // "Red, Blue"
-        sizeText: api.variantOneLine,         // "64GB, 32GB"
+        color: api.colorOneLine,
+        sizeText: api.variantOneLine,
         category: api.category,
         availabilityText: api.availabilityText,
         images: api.images,
         mrp: api.price,
         offerPrice: api.hasDiscount ? api.finalPrice : api.price,
-        rating: 0, // API doesn't provide rating; keep 0 or compute later
+        rating: 0,
         description: api.description,
       );
 
@@ -228,18 +294,38 @@ class ProductDetailsController extends GetxController {
         phone: api.phone,
         openTime: api.openingTimeHHmm,
         closeTime: api.closingTimeHHmm,
-
+        photoUrl: api.proPath,
       );
 
-      // If/when you add real reviews API, replace this:
       reviews.assignAll(const []);
-
     } catch (e) {
       error.value = e.toString();
     } finally {
       isLoading.value = false;
     }
   }
+
+
+  // inside ProductDetailsController
+
+  void goToStoreDetails() {
+    Get.toNamed(
+      '/store-details', // or AppRoutes.storeDetails
+      arguments: {
+        'store': {
+          'id': store.id,
+          'name': store.name,
+          'type': store.category,
+          'address': store.address,
+          'phone': store.phone,
+          'opening_time': store.openTime,
+          'closing_time': store.closeTime,
+          'image': store.photoUrl ?? '',
+        },
+      },
+    );
+  }
+
 
   @override
   void onClose() {
@@ -262,8 +348,6 @@ class ProductDetailsController extends GetxController {
     final ampm = dt.hour >= 12 ? 'pm' : 'am';
     return '$h:$m $ampm';
   }
-
-
 
 
 }

@@ -1,4 +1,3 @@
-// services/product_service.dart
 import 'dart:convert';
 import 'package:dealzy/product_details/product_details_models.dart';
 import 'package:http/http.dart' as http;

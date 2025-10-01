@@ -1,4 +1,3 @@
-// lib/models/suggestion_item.dart
 
 class SuggestionItem {
   final String? postCode;

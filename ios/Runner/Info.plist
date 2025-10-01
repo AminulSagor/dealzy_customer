@@ -24,8 +24,11 @@
 	<string>????</string>
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
+
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+
+	<!-- Permissions -->
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>Dealzy may access your location to keep local offers up to date.</string>
 	<key>NSLocationAlwaysUsageDescription</key>
@@ -34,23 +37,49 @@
 	<string>Dealzy uses your location to show nearby stores, delivery availability, and relevant deals.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>We use the photo library to let you choose a profile picture.</string>
+
+	<!-- Indirect input (trackpads, etc.) -->
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+
+	<!-- Background modes -->
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>remote-notification</string>
 	</array>
+
+	<!-- Launch / Main -->
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>
 	<string>Main</string>
+
+	<!-- Status bar -->
 	<key>UIStatusBarStyle</key>
-	<string></string>
+	<string>UIStatusBarStyleDefault</string>
+
+	<!-- Allow url_launcher to detect email handlers -->
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>mailto</string>
+		<string>googlegmail</string>
+	</array>
+
+	<!-- Orientations (iPhone) -->
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
+		<string>UIInterfaceOrientationPortrait</string>
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
+	</array>
+
+	<!-- Orientations (iPad) - optional but recommended if you support iPad -->
+	<key>UISupportedInterfaceOrientations~ipad</key>
+	<array>
 		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationPortraitUpsideDown</string>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
 </dict>
 </plist>

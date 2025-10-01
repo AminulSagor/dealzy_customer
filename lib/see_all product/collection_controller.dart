@@ -90,7 +90,6 @@ class CollectionController extends GetxController {
   final ScrollController gridCtrl = ScrollController();
 
   void back() => Get.back();
-  void openMenu() => Get.snackbar('Menu', 'More options tapped');
   void openItem(CollectionItem i) => Get.toNamed('/product-details/${i.id}');
 
   bool get _isValidOffer =>
@@ -142,7 +141,6 @@ class CollectionController extends GetxController {
     gridCtrl.dispose();
     searchCtrl.dispose();
     _debouncer?.dispose();
-    _service.dispose();
     _homeService.dispose();
     super.onClose();
   }

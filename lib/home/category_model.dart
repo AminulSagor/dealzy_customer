@@ -1,4 +1,4 @@
-// lib/models/category_model.dart
+
 class CategoryDto {
   final String id;
   final String category;

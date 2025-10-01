@@ -1,8 +1,7 @@
-// lib/home/home_controller.dart
+
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-
 import '../combine_model/product_model.dart';
 import '../combine_service/bookmark_service.dart';
 import '../routes/app_routes.dart';
@@ -50,7 +49,7 @@ class HomeController extends GetxController {
 
   // ---- Header (reactive, will be overridden by profile if available) ----
   final username = ''.obs;
-  final location = 'Jalalabad,Sylhet'.obs;
+  final location = ''.obs;
   final avatarUrl = ''.obs;
 
   // search
@@ -259,7 +258,6 @@ class HomeController extends GetxController {
   void onInit() {
     super.onInit();
 
-    _seedBanners(); // optional placeholder banners
     _loadProfileThenData(); // <-- load profile first; data loaders below can use location later if needed
 
     // keep dot indicator in sync
@@ -518,24 +516,7 @@ class HomeController extends GetxController {
     );
   }
 
-  // ---------- Seeds (optional) ----------
-  void _seedBanners() {
-    banners.assignAll([
-      BannerItem(
-        image:
-        'https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=1200&auto=format&fit=crop',
-        title: 'New Collection',
-        subtitle:
-        'Lorem ipsum is simply dummy text of the printing and typesetting industry.',
-      ),
-      BannerItem(
-        image:
-        'https://images.unsplash.com/photo-1520975916090-3105956dac38?q=80&w=1200&auto=format&fit=crop',
-        title: 'Summer Sale',
-        subtitle: 'Up to 50% off on selected items.',
-      ),
-    ]);
-  }
+
 
   @override
   void onClose() {

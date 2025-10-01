@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../storage/token_storage.dart';
+import '../widgets/login_required_dialog.dart';
 import 'product_details_controller.dart';
 
 class ProductDetailsView extends GetView<ProductDetailsController> {
@@ -220,21 +222,75 @@ class _CurvedBody extends StatelessWidget {
               expanded: c.descExpanded.value, // <-- Rx read
               onToggle: c.toggleDesc,
             )),
-            const SizedBox(height: 18),
 
             // Shop Details
-            const Text(
-              'Shop Details',
-              textAlign: TextAlign.left,
-              style: TextStyle(
-                fontWeight: FontWeight.w700,
-                fontSize: 16,
-                color: Colors.black87,
-              ),
+            const SizedBox(height: 8),
+
+            Row(
+              children: [
+                const Text(
+                  'Shop Details',
+                  textAlign: TextAlign.left,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 16,
+                    color: Colors.black87,
+                  ),
+                ),
+                const Spacer(),
+                Obx(() {
+                  final reporting = c.isReporting.value;
+                  return TextButton(
+                    onPressed: reporting
+                        ? null
+                        : () async {
+                      // 🔹 Check login first
+                      final token = await TokenStorage.getToken();
+                      if (token == null || token.isEmpty) {
+                        // Show your login dialog if not logged in
+                        Get.dialog(const LoginRequiredDialog(), barrierDismissible: false);
+                        return;
+                      }
+
+                      // 🔹 Only open report dialog if logged in
+                      final payload = await showDialog<_ReportPayload>(
+                        context: context,
+                        barrierDismissible: false,
+                        builder: (_) => _ReportInappropriateDialog(
+                          productTitle: c.product.title,
+                        ),
+                      );
+
+                      // If user submitted, compose message and send
+                      if (payload != null) {
+                        final msg = [
+                          'Reason: ${payload.reason}',
+                          if (payload.notes.trim().isNotEmpty)
+                            'Notes: ${payload.notes.trim()}',
+                        ].join('\n');
+                        await c.reportProduct(msg);
+                      }
+                    },
+                    child: Text(
+                      reporting ? 'Reporting…' : 'Report Inappropriate',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Colors.red,
+                        decoration: TextDecoration.underline, // looks like a link
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  );
+                }),
+
+              ],
             ),
             const SizedBox(height: 8),
             _ShopDetails(controller: c),
             const SizedBox(height: 18),
+            // Inside Column of _CurvedBody after _ShopDetails(controller: c),
+
+
 
 
 
@@ -395,12 +451,17 @@ class _ShopDetails extends StatelessWidget {
       child: Column(
         children: [
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const CircleAvatar(
+              CircleAvatar(
                 radius: 22,
-                backgroundImage: NetworkImage(
-                  'https://images.unsplash.com/photo-1516574187841-cb9cc2ca948b?q=80&w=800&auto=format&fit=crop',
-                ),
+                backgroundColor: Colors.grey.shade200,
+                backgroundImage: (c.store.photoUrl != null && c.store.photoUrl!.isNotEmpty)
+                    ? NetworkImage(c.store.photoUrl!)
+                    : null,
+                child: (c.store.photoUrl == null || c.store.photoUrl!.isEmpty)
+                    ? const Icon(Icons.store_rounded, color: Colors.black45)
+                    : null,
               ),
               const SizedBox(width: 10),
               Expanded(
@@ -408,23 +469,53 @@ class _ShopDetails extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const SizedBox(height: 2),
-                    Text(
-                      c.store.name,
-                      textAlign: TextAlign.left,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w700,
-                        color: Colors.black87,
-                      ),
-                    ),
-                    Text(
-                      c.store.category,
-                      textAlign: TextAlign.left,
-                      style: const TextStyle(color: Colors.black54),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // store name + category
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                c.store.name,
+                                textAlign: TextAlign.left,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.black87,
+                                ),
+                              ),
+                              Text(
+                                c.store.category,
+                                textAlign: TextAlign.left,
+                                style: const TextStyle(color: Colors.black54),
+                              ),
+                            ],
+                          ),
+                        ),
+                        // view shop link
+                        TextButton(
+                          onPressed: c.goToStoreDetails,
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: 6),
+                            minimumSize: Size.zero,
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
+                          child: const Text(
+                            'View Shop',
+                            style: TextStyle(
+                              color: Color(0xFF124A89),
+                              fontWeight: FontWeight.w600,
+                              decoration: TextDecoration.underline,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
               ),
-
             ],
           ),
           const SizedBox(height: 12),
@@ -487,6 +578,7 @@ class _ShopDetails extends StatelessWidget {
 
 
 
+
 class _ErrorState extends StatelessWidget {
   const _ErrorState({required this.message, required this.onRetry});
   final String message;
@@ -518,3 +610,157 @@ class _ErrorState extends StatelessWidget {
     );
   }
 }
+
+class _ReportPayload {
+  final String reason;
+  final String notes;
+  const _ReportPayload({required this.reason, required this.notes});
+}
+
+class _ReportInappropriateDialog extends StatefulWidget {
+  const _ReportInappropriateDialog({required this.productTitle});
+
+  final String productTitle;
+
+  @override
+  State<_ReportInappropriateDialog> createState() => _ReportInappropriateDialogState();
+}
+
+class _ReportInappropriateDialogState extends State<_ReportInappropriateDialog> {
+  final _notesCtrl = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
+
+  String? _selectedReason;
+  bool _ack = true; // pre-checked to reduce friction
+
+  static const _reasons = <String>[
+    'Spam or misleading',
+    'Hate/harassment',
+    'Nudity/sexual content',
+    'Illegal or dangerous',
+    'Violence or gore',
+    'Other',
+  ];
+
+  @override
+  void dispose() {
+    _notesCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      titlePadding: const EdgeInsets.fromLTRB(20, 16, 16, 0),
+      contentPadding: const EdgeInsets.fromLTRB(16, 10, 16, 8),
+      actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+      title: Row(
+        children: const [
+          CircleAvatar(
+            radius: 16,
+            backgroundColor: Color(0x14D32F2F),
+            child: Icon(Icons.flag_outlined, color: Color(0xFFD32F2F)),
+          ),
+          SizedBox(width: 10),
+          Text('Report Inappropriate'),
+        ],
+      ),
+      content: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 440),
+        child: Form(
+          key: _formKey,
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Policy / assurance text for App Review
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.03),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    'Is this post inappropriate?\n'
+                        'We will review this report within 24 hours and, if deemed inappropriate, '
+                        'the post will be removed within that timeframe. We will also take action '
+                        'against its author. There is zero tolerance for objectionable content or abuse.',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.black87, height: 1.25),
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                // Product context (helps moderators)
+                Text(
+                  'Item: ${widget.productTitle}',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.black54),
+                ),
+                const SizedBox(height: 8),
+
+                // Reasons
+                Text('Choose a reason', style: Theme.of(context).textTheme.titleSmall),
+                const SizedBox(height: 6),
+                ..._reasons.map((r) => RadioListTile<String>(
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(r),
+                  value: r,
+                  groupValue: _selectedReason,
+                  onChanged: (v) => setState(() => _selectedReason = v),
+                )),
+
+                // Notes
+                const SizedBox(height: 6),
+                Text('Add details (optional)', style: Theme.of(context).textTheme.titleSmall),
+                const SizedBox(height: 6),
+                TextFormField(
+                  controller: _notesCtrl,
+                  maxLines: 4,
+                  textInputAction: TextInputAction.newline,
+                  decoration: InputDecoration(
+                    hintText: 'Describe what’s wrong.',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                ),
+
+                const SizedBox(height: 8),
+                CheckboxListTile(
+                  contentPadding: EdgeInsets.zero,
+                  value: _ack,
+                  onChanged: (v) => setState(() => _ack = v ?? false),
+                  controlAffinity: ListTileControlAffinity.leading,
+                  title: const Text(
+                    'I understand false reports may lead to restrictions.',
+                    style: TextStyle(fontSize: 13),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: (_selectedReason != null && _ack)
+              ? () {
+            Navigator.pop(
+              context,
+              _ReportPayload(
+                reason: _selectedReason!,
+                notes: _notesCtrl.text,
+              ),
+            );
+          }
+              : null,
+          child: const Text('Send Report'),
+        ),
+      ],
+    );
+  }
+}
+

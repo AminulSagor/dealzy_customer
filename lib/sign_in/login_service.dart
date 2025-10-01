@@ -21,13 +21,7 @@ class LoginService {
       ),
     );
 
-    // Optional: remove in release builds
-    _dio.interceptors.add(LogInterceptor(
-      request: true,
-      requestBody: true,
-      responseBody: true,
-      error: true,
-    ));
+
   }
 
   /// POST /user_login.php

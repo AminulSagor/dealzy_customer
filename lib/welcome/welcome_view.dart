@@ -10,9 +10,9 @@ class WelcomeView extends GetView<WelcomeController> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    // Adjust these two to fine-tune overlap
-    final double logoHeight = 180.h; // logo render height
-    final double cardTopOffset = 130.h; // how far the card starts below the top of the stack
+
+    final double logoHeight = 180.h;
+    final double cardTopOffset = 130.h;
 
     return Scaffold(
       backgroundColor: const Color(0xFF124A89),
