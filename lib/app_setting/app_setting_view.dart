@@ -3,12 +3,10 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../terms_and_condition/user_agreement_page.dart';
+import '../terms_and_condition/about_view.dart';
 import 'app_setting_controller.dart';
 
-/// Lightweight design system for consistent color, spacing, and type.
 class DS {
-  // Colors
   static const Color primary = Color(0xFF2563EB); // Blue 600
   static const Color onPrimary = Colors.white;
   static const Color surface = Colors.white;
@@ -182,8 +180,7 @@ class AppSettingView extends GetView<AppSettingController> {
               ),
 
               DS.gap24,
-              Divider(color: DS.divider, height: 1),
-              DS.gap8,
+
               Container(
                 decoration: DS.card,
                 padding: EdgeInsets.all(4.w),
@@ -194,9 +191,9 @@ class AppSettingView extends GetView<AppSettingController> {
                       contentPadding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 4.h),
                       leading: const Icon(Icons.info_outline_rounded, color: DS.primary),
                       title: const Text('About App', style: TextStyle(fontWeight: FontWeight.w700)),
-                      subtitle: const Text('Version 1.0 • Terms & EULA'),
+                      subtitle: const Text('Version 1.0 '),
                       trailing: const Icon(Icons.chevron_right),
-                      onTap: () => Get.to(() => const DealzyloopUserAgreementPage()),
+                      onTap: () => Get.to(() => const AboutView()),
                     ),
                     const Divider(height: 1, color: DS.divider),
 
