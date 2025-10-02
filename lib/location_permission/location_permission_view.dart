@@ -84,13 +84,9 @@ class LocationPermissionView extends GetView<LocationPermissionController> {
                         ),
 
                         // BODY with padding (separate from header)
+                        // BODY with padding (separate from header)
                         Padding(
-                          padding: EdgeInsets.fromLTRB(
-                            16.w,
-                            1.h, // space for the overlapping pin
-                            16.w,
-                            20.h,
-                          ),
+                          padding: EdgeInsets.fromLTRB(16.w, 1.h, 16.w, 20.h),
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
@@ -103,21 +99,19 @@ class LocationPermissionView extends GetView<LocationPermissionController> {
                                 textAlign: TextAlign.center,
                               ),
                               SizedBox(height: 16.h),
+
+                              // Primary: Get Location
                               SizedBox(
                                 width: 0.78.sw,
                                 height: 48.h,
                                 child: Obx(() {
                                   final busy = controller.isBusy.value;
                                   return ElevatedButton(
-                                    onPressed: busy
-                                        ? null
-                                        : controller.requestLocation,
+                                    onPressed: busy ? null : controller.requestLocation,
                                     style: ElevatedButton.styleFrom(
                                       backgroundColor: const Color(0xFF124A89),
                                       foregroundColor: Colors.white,
-                                      disabledBackgroundColor: const Color(
-                                        0xFF124A89,
-                                      ).withOpacity(0.5),
+                                      disabledBackgroundColor: const Color(0xFF124A89).withOpacity(0.5),
                                       disabledForegroundColor: Colors.white70,
                                       shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(14.r),
@@ -130,18 +124,48 @@ class LocationPermissionView extends GetView<LocationPermissionController> {
                                         SizedBox(width: 10.w),
                                         Text(
                                           busy ? 'Please wait…' : 'Get Location',
-                                          style: const TextStyle(
-                                            fontWeight: FontWeight.w700,
-                                          ),
+                                          style: const TextStyle(fontWeight: FontWeight.w700),
                                         ),
                                       ],
                                     ),
                                   );
                                 }),
                               ),
+
+                              SizedBox(height: 10.h),
+
+                              // Secondary: Continue without location
+                              SizedBox(
+                                width: 0.78.sw,
+                                height: 46.h,
+                                child: OutlinedButton(
+                                  onPressed: controller.continueWithoutLocation,
+                                  style: OutlinedButton.styleFrom(
+                                    side: const BorderSide(color: Color(0xFF124A89), width: 1.2),
+                                    foregroundColor: const Color(0xFF124A89),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(14.r),
+                                    ),
+                                  ),
+                                  child: const Text(
+                                    ' Continue without location',
+                                    style: TextStyle(fontWeight: FontWeight.w700),
+                                  ),
+                                ),
+                              ),
+
+                              SizedBox(height: 8.h),
+
+                              // Tiny helper text
+                              Text(
+                                'You can enable location later from Settings.',
+                                style: theme.textTheme.bodySmall?.copyWith(color: Colors.black54),
+                                textAlign: TextAlign.center,
+                              ),
                             ],
                           ),
                         ),
+
                       ],
                     ),
                   ),

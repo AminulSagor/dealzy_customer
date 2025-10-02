@@ -8,21 +8,19 @@ class SignupService {
   SignupService() {
     // Read from .env or fallback
     final raw = dotenv.maybeGet('API_BASE_URL') ?? 'https://dealzyloop.com/api';
-    final base = raw.trim().replaceAll(RegExp(r'/*$'), ''); // strip trailing slash
+    final base = raw.trim().replaceAll(RegExp(r'/*$'), ''); // strip trailing slash(es)
 
     _dio = Dio(
       BaseOptions(
-        baseUrl: base, // <- loaded directly here
+        baseUrl: base,
         connectTimeout: const Duration(seconds: 10),
         receiveTimeout: const Duration(seconds: 20),
-        headers: {
+        headers: const {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
         },
       ),
     );
-
-
   }
 
   /// POST /user_reg.php
@@ -30,29 +28,31 @@ class SignupService {
   Future<({bool success, String status, String message})> signUp({
     required String name,
     required String phone,
-    required String email,        // 👈 added
+    required String email,
     required String password,
-    required double latitude,
-    required double longitude,
+    double? latitude,          // <-- now nullable
+    double? longitude,         // <-- now nullable
     String? postCode,
     String? adminDistrict,
+    // If later you want district/city/street, add them here as nullable too.
   }) async {
     const path = '/user_reg.php';
 
     final body = <String, dynamic>{
       'name': name,
       'phone': phone,
-      'email': email,             // 👈 added
+      'email': email,
       'password': password,
-      'post_code': postCode,
-      'latitude': latitude,
-      'longitude': longitude,
-      'admin_district': adminDistrict,
-    }..removeWhere((k, v) => v == null || (v is String && v.trim().isEmpty));
+      if (postCode != null && postCode.trim().isNotEmpty) 'post_code': postCode,
+      if (adminDistrict != null && adminDistrict.trim().isNotEmpty)
+        'admin_district': adminDistrict,
+      if (latitude != null) 'latitude': latitude,
+      if (longitude != null) 'longitude': longitude,
+    };
 
     final res = await _dio.post(path, data: body);
 
-    // Some servers return a string; normalize to Map
+    // Normalize response to Map
     final data = res.data is String ? jsonDecode(res.data as String) : res.data;
     final map = (data as Map<String, dynamic>);
 

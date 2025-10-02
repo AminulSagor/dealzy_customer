@@ -150,24 +150,57 @@ class SignUpView extends GetView<SignUpController> {
 
                                 SizedBox(height: 12.h),
 
-                                // Location dropdown
-                                TextFormField(
-                                  controller: controller.locationDisplayCtrl,
-                                  readOnly: true, // not editable
-                                  enableInteractiveSelection:
-                                      false, // no selection handles
-                                  validator: controller
-                                      .validateLocationDisplay, // ensure non-empty
-                                  decoration: _dec('Detecting location…')
-                                      .copyWith(
-                                        prefixIcon: const Icon(
-                                          Icons.location_on_outlined,
-                                        ),
-                                        suffixIcon: const Icon(
-                                          Icons.lock_outline,
-                                        ), // visual hint it's locked
+
+                                // -------- Location (Optional) --------
+                                // -------- Location (Optional) --------
+                                SizedBox(height: 12.h),
+
+                                Container(
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFF3F5F7),
+                                    borderRadius: BorderRadius.circular(12.r),
+                                  ),
+                                  padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
+                                  child: Row(
+                                    children: [
+                                      const Icon(Icons.location_on_outlined, color: Color(0xFF124A89)),
+                                      SizedBox(width: 8.w),
+
+                                      // ✅ Obx reads REAL Rx values (postalCode / district / city)
+                                      Expanded(
+                                        child: Obx(() {
+                                          final hasPostal = controller.postalCode.value.isNotEmpty;
+                                          final hasCity   = controller.city.value.isNotEmpty;
+
+                                          final parts = <String>[
+                                            if (controller.district.value.isNotEmpty) controller.district.value,
+                                            if (hasPostal) controller.postalCode.value else if (hasCity) controller.city.value,
+                                          ];
+
+                                          final label = parts.isEmpty ? 'Location (optional)' : parts.join(' • ');
+                                          return Text(
+                                            label,
+                                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                              color: parts.isEmpty ? Colors.black45 : const Color(0xFF2E2E2E),
+                                            ),
+                                            overflow: TextOverflow.ellipsis,
+                                          );
+                                        }),
                                       ),
+
+                                      // TextButton(
+                                      //   onPressed: () {
+                                      //     // optional: open a manual picker later
+                                      //     // e.g. Get.toNamed(AppRoutes.locationPicker);
+                                      //   },
+                                      //   child: const Text('Add'),
+                                      // ),
+                                      const Icon(Icons.lock_outline, color: Color(0xFF124A89)),
+                                    ],
+                                  ),
                                 ),
+
+
 
                                 // In SignUpView build() -> inside the Column(children: [...]) just above the Confirm button:
                                 SizedBox(height: 12.h),
