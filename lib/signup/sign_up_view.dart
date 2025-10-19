@@ -30,6 +30,14 @@ class SignUpView extends GetView<SignUpController> {
 
     return Scaffold(
       backgroundColor: const Color(0xFF124A89),
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF124A89),
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () => Get.back(), // or Navigator.pop(context)
+        ),
+      ),
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -44,7 +52,7 @@ class SignUpView extends GetView<SignUpController> {
                   children: [
                     // Card pushed down so the logo sits on it
                     Padding(
-                      padding: EdgeInsets.only(top: logoHeight - overlap),
+                      padding: EdgeInsets.only(top: logoHeight - overlap-70.h),
                       child: Card(
                         elevation: 3,
                         color: Colors.white,
@@ -65,14 +73,14 @@ class SignUpView extends GetView<SignUpController> {
                                     children: [
                                       const TextSpan(
                                         text:
-                                            'Get a smarter, smoother shopping experience.\n',
+                                        'Get a smarter, smoother shopping experience.\n',
                                       ),
                                       TextSpan(
                                         text: 'Sign up now!',
                                         style: theme.textTheme.titleMedium
                                             ?.copyWith(
-                                              fontWeight: FontWeight.w800,
-                                            ),
+                                          fontWeight: FontWeight.w800,
+                                        ),
                                       ),
                                     ],
                                   ),
@@ -150,24 +158,57 @@ class SignUpView extends GetView<SignUpController> {
 
                                 SizedBox(height: 12.h),
 
-                                // Location dropdown
-                                TextFormField(
-                                  controller: controller.locationDisplayCtrl,
-                                  readOnly: true, // not editable
-                                  enableInteractiveSelection:
-                                      false, // no selection handles
-                                  validator: controller
-                                      .validateLocationDisplay, // ensure non-empty
-                                  decoration: _dec('Detecting location…')
-                                      .copyWith(
-                                        prefixIcon: const Icon(
-                                          Icons.location_on_outlined,
-                                        ),
-                                        suffixIcon: const Icon(
-                                          Icons.lock_outline,
-                                        ), // visual hint it's locked
+
+                                // -------- Location (Optional) --------
+                                // -------- Location (Optional) --------
+                                SizedBox(height: 12.h),
+
+                                Container(
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFF3F5F7),
+                                    borderRadius: BorderRadius.circular(12.r),
+                                  ),
+                                  padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
+                                  child: Row(
+                                    children: [
+                                      const Icon(Icons.location_on_outlined, color: Color(0xFF124A89)),
+                                      SizedBox(width: 8.w),
+
+                                      // ✅ Obx reads REAL Rx values (postalCode / district / city)
+                                      Expanded(
+                                        child: Obx(() {
+                                          final hasPostal = controller.postalCode.value.isNotEmpty;
+                                          final hasCity   = controller.city.value.isNotEmpty;
+
+                                          final parts = <String>[
+                                            if (controller.district.value.isNotEmpty) controller.district.value,
+                                            if (hasPostal) controller.postalCode.value else if (hasCity) controller.city.value,
+                                          ];
+
+                                          final label = parts.isEmpty ? 'Location (optional)' : parts.join(' • ');
+                                          return Text(
+                                            label,
+                                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                              color: parts.isEmpty ? Colors.black45 : const Color(0xFF2E2E2E),
+                                            ),
+                                            overflow: TextOverflow.ellipsis,
+                                          );
+                                        }),
                                       ),
+
+                                      // TextButton(
+                                      //   onPressed: () {
+                                      //     // optional: open a manual picker later
+                                      //     // e.g. Get.toNamed(AppRoutes.locationPicker);
+                                      //   },
+                                      //   child: const Text('Add'),
+                                      // ),
+                                      const Icon(Icons.lock_outline, color: Color(0xFF124A89)),
+                                    ],
+                                  ),
                                 ),
+
+
 
                                 // In SignUpView build() -> inside the Column(children: [...]) just above the Confirm button:
                                 SizedBox(height: 12.h),
@@ -176,20 +217,20 @@ class SignUpView extends GetView<SignUpController> {
                                 Obx(() {
                                   return Row(
                                     crossAxisAlignment:
-                                        CrossAxisAlignment.center,
+                                    CrossAxisAlignment.center,
                                     children: [
                                       Checkbox(
                                         value: controller.agreed.value,
                                         onChanged: (v) =>
-                                            controller.agreed.value =
-                                                v ?? false,
+                                        controller.agreed.value =
+                                            v ?? false,
                                         shape: RoundedRectangleBorder(
                                           borderRadius: BorderRadius.circular(
                                             4,
                                           ),
                                         ),
                                         materialTapTargetSize:
-                                            MaterialTapTargetSize.shrinkWrap,
+                                        MaterialTapTargetSize.shrinkWrap,
                                       ),
                                       Expanded(
                                         child: GestureDetector(
@@ -205,11 +246,11 @@ class SignUpView extends GetView<SignUpController> {
                                                   .textTheme
                                                   .bodySmall
                                                   ?.copyWith(
-                                                    color: const Color(
-                                                      0xFF2E2E2E,
-                                                    ),
-                                                    height: 1.35,
-                                                  ),
+                                                color: const Color(
+                                                  0xFF2E2E2E,
+                                                ),
+                                                height: 1.35,
+                                              ),
                                               children: [
                                                 const TextSpan(
                                                   text: 'I agree to the ',
@@ -242,8 +283,8 @@ class SignUpView extends GetView<SignUpController> {
                                   final busy = controller.isBusy.value;
                                   final canSubmit =
                                       controller.isValid.value &&
-                                      controller.agreed.value &&
-                                      !busy;
+                                          controller.agreed.value &&
+                                          !busy;
 
                                   return SizedBox(
                                     width: 0.38.sw,
@@ -290,8 +331,8 @@ class SignUpView extends GetView<SignUpController> {
                                       textAlign: TextAlign.center,
                                       style: theme.textTheme.bodySmall
                                           ?.copyWith(
-                                            color: const Color(0xFF2E2E2E),
-                                          ),
+                                        color: const Color(0xFF2E2E2E),
+                                      ),
                                     ),
                                     GestureDetector(
                                       onTap: () {
@@ -302,8 +343,8 @@ class SignUpView extends GetView<SignUpController> {
                                         textAlign: TextAlign.center,
                                         style: theme.textTheme.bodySmall
                                             ?.copyWith(
-                                              fontWeight: FontWeight.w700,
-                                            ),
+                                          fontWeight: FontWeight.w700,
+                                        ),
                                       ),
                                     ),
                                   ],
@@ -317,7 +358,7 @@ class SignUpView extends GetView<SignUpController> {
 
                     // Overlapping logo
                     Positioned(
-                      top: 0,
+                      top: -70,
                       child: Image.asset(
                         'assets/png/logo.png',
                         height: logoHeight,

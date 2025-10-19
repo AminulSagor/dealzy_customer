@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import '../storage/token_storage.dart';
+import '../utils/price_formatter.dart';
 import '../widgets/login_required_dialog.dart';
 import 'product_details_controller.dart';
 
@@ -62,34 +64,70 @@ class ProductDetailsView extends GetView<ProductDetailsController> {
           ),
 
           // Floating Bookmark button
+          // Floating Bookmark + Add to Cart buttons
           Positioned(
             left: 0,
             right: 0,
             bottom: 14 + MediaQuery.of(context).padding.bottom,
-            child: Center(
-              child: // In ProductDetailsView, where the "Bookmark" button is:
-              Obx(() {
-                final busy = c.isBookmarking.value;
-                return ElevatedButton(
-                  onPressed: busy ? null : c.onBookmark, // disabled when busy
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF124A89),
-                    elevation: 8,
-                    shadowColor: Colors.black.withOpacity(.18),
-                    padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(28),
-                      side: const BorderSide(color: Colors.black12),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Obx(() {
+                final bookmarking = c.isBookmarking.value;
+                final adding = c.isAddingToCart?.value ?? false; // optional Rx flag if you track it
+                return Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // 🩵 Bookmark button
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: bookmarking ? null : c.onBookmark,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF124A89),
+                          elevation: 6,
+                          shadowColor: Colors.black.withOpacity(.15),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(28),
+                          ),
+                        ),
+                        child: Text(
+                          bookmarking ? 'Saving…' : 'Bookmark',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
                     ),
-                  ),
-                  child: Text(
-                    busy ? 'Saving...' : 'Bookmark',
-                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
-                  ),
+                    const SizedBox(width: 12),
+                    // 🛒 Add to Cart button
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: adding ? null : c.onAddToCart,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green.shade700,
+                          elevation: 6,
+                          shadowColor: Colors.black.withOpacity(.15),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(28),
+                          ),
+                        ),
+                        child: Text(
+                          adding ? 'Adding…' : 'Add to Cart',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 );
               }),
             ),
           ),
+
         ],
       ),
     );
@@ -314,7 +352,7 @@ class _PriceRow extends StatelessWidget {
       return Row(
         children: [
           Text(
-            '\£${p.mrp.toStringAsFixed(0)}',
+            '£${formatPriceSmart(p.mrp)}',
             style: const TextStyle(
               color: Colors.black45,
               decoration: TextDecoration.lineThrough,
@@ -324,7 +362,7 @@ class _PriceRow extends StatelessWidget {
           ),
           const SizedBox(width: 10),
           Text(
-            '\£${p.offerPrice.toStringAsFixed(0)}',
+            '£${formatPriceSmart(p.offerPrice)}',
             style: const TextStyle(
               color: Colors.red,
               fontSize: 20,
@@ -648,26 +686,36 @@ class _ReportInappropriateDialogState extends State<_ReportInappropriateDialog> 
     super.dispose();
   }
 
+
+
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      titlePadding: const EdgeInsets.fromLTRB(20, 16, 16, 0),
-      contentPadding: const EdgeInsets.fromLTRB(16, 10, 16, 8),
-      actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16.r), // responsive radius
+      ),
+      titlePadding: EdgeInsets.fromLTRB(20.w, 16.h, 16.w, 0), // responsive paddings
+      contentPadding: EdgeInsets.fromLTRB(16.w, 10.h, 16.w, 8.h),
+      actionsPadding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 12.h),
       title: Row(
-        children: const [
+        children: [
           CircleAvatar(
-            radius: 16,
-            backgroundColor: Color(0x14D32F2F),
-            child: Icon(Icons.flag_outlined, color: Color(0xFFD32F2F)),
+            radius: 16.r,
+            backgroundColor: const Color(0x14D32F2F),
+            child: Icon(Icons.flag_outlined, color: const Color(0xFFD32F2F), size: 18.sp),
           ),
-          SizedBox(width: 10),
-          Text('Report Inappropriate'),
+          SizedBox(width: 10.w),
+          Text(
+            'Report Inappropriate',
+            style: Theme.of(context)
+                .textTheme
+                .titleMedium
+                ?.copyWith(fontSize: 16.sp),
+          ),
         ],
       ),
       content: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 440),
+        constraints: BoxConstraints(maxWidth: 440.w),
         child: Form(
           key: _formKey,
           child: SingleChildScrollView(
@@ -676,63 +724,88 @@ class _ReportInappropriateDialogState extends State<_ReportInappropriateDialog> 
               children: [
                 // Policy / assurance text for App Review
                 Container(
-                  padding: const EdgeInsets.all(12),
+                  padding: EdgeInsets.all(12.w),
                   decoration: BoxDecoration(
                     color: Colors.black.withOpacity(0.03),
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(10.r),
                   ),
                   child: Text(
                     'Is this post inappropriate?\n'
                         'We will review this report within 24 hours and, if deemed inappropriate, '
                         'the post will be removed within that timeframe. We will also take action '
                         'against its author. There is zero tolerance for objectionable content or abuse.',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.black87, height: 1.25),
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Colors.black87,
+                      height: 1.25,
+                      fontSize: 14.sp,
+                    ),
                   ),
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: 12.h),
 
                 // Product context (helps moderators)
                 Text(
                   'Item: ${widget.productTitle}',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.black54),
+                  style: Theme.of(context)
+                      .textTheme
+                      .bodySmall
+                      ?.copyWith(color: Colors.black54, fontSize: 13.sp),
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: 8.h),
 
                 // Reasons
-                Text('Choose a reason', style: Theme.of(context).textTheme.titleSmall),
-                const SizedBox(height: 6),
-                ..._reasons.map((r) => RadioListTile<String>(
-                  dense: true,
-                  contentPadding: EdgeInsets.zero,
-                  title: Text(r),
-                  value: r,
-                  groupValue: _selectedReason,
-                  onChanged: (v) => setState(() => _selectedReason = v),
-                )),
+                Text(
+                  'Choose a reason',
+                  style: Theme.of(context)
+                      .textTheme
+                      .titleSmall
+                      ?.copyWith(fontSize: 14.sp),
+                ),
+                SizedBox(height: 6.h),
+                ..._reasons.map(
+                      (r) => RadioListTile<String>(
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(r, style: TextStyle(fontSize: 13.sp)),
+                    value: r,
+                    groupValue: _selectedReason,
+                    onChanged: (v) => setState(() => _selectedReason = v),
+                  ),
+                ),
 
                 // Notes
-                const SizedBox(height: 6),
-                Text('Add details (optional)', style: Theme.of(context).textTheme.titleSmall),
-                const SizedBox(height: 6),
+                SizedBox(height: 6.h),
+                Text(
+                  'Add details (optional)',
+                  style: Theme.of(context)
+                      .textTheme
+                      .titleSmall
+                      ?.copyWith(fontSize: 14.sp),
+                ),
+                SizedBox(height: 6.h),
                 TextFormField(
                   controller: _notesCtrl,
                   maxLines: 4,
                   textInputAction: TextInputAction.newline,
                   decoration: InputDecoration(
                     hintText: 'Describe what’s wrong.',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                    hintStyle: TextStyle(fontSize: 13.sp),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10.r),
+                    ),
+                    contentPadding: EdgeInsets.all(12.w),
                   ),
                 ),
 
-                const SizedBox(height: 8),
+                SizedBox(height: 8.h),
                 CheckboxListTile(
                   contentPadding: EdgeInsets.zero,
                   value: _ack,
                   onChanged: (v) => setState(() => _ack = v ?? false),
                   controlAffinity: ListTileControlAffinity.leading,
-                  title: const Text(
+                  title: Text(
                     'I understand false reports may lead to restrictions.',
-                    style: TextStyle(fontSize: 13),
+                    style: TextStyle(fontSize: 13.sp),
                   ),
                 ),
               ],
@@ -743,7 +816,7 @@ class _ReportInappropriateDialogState extends State<_ReportInappropriateDialog> 
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
+          child: Text('Cancel', style: TextStyle(fontSize: 14.sp)),
         ),
         FilledButton(
           onPressed: (_selectedReason != null && _ack)
@@ -757,10 +830,11 @@ class _ReportInappropriateDialogState extends State<_ReportInappropriateDialog> 
             );
           }
               : null,
-          child: const Text('Send Report'),
+          child: Text('Send Report', style: TextStyle(fontSize: 14.sp)),
         ),
       ],
     );
   }
+
 }
 

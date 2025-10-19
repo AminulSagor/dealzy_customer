@@ -292,7 +292,7 @@ class CollectionController extends GetxController {
       Get.snackbar(
         'Saved',
         res.message.isNotEmpty ? res.message : 'Bookmarked “${i.title}”',
-        snackPosition: SnackPosition.BOTTOM,
+        snackPosition: SnackPosition.TOP,
         backgroundColor: const Color(0xFF2E7D32),
         colorText: Colors.white,
         margin: const EdgeInsets.all(12),

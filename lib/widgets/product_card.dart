@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import '../utils/price_formatter.dart';
 
 class ProductCard<T> extends StatelessWidget {
   const ProductCard({
     super.key,
-    required this.item,              // payload you get back in callbacks
+    required this.item,
     required this.title,
     required this.image,
     required this.price,
@@ -15,20 +16,14 @@ class ProductCard<T> extends StatelessWidget {
     this.brandColor = const Color(0xFF124A89),
   });
 
-  // Generic payload (your ProductItem, or anything else)
   final T item;
-
-  // Display props (decouple UI from model)
   final String title;
   final String image;
   final double price;
   final double? offerPrice;
   final List<String> expiryBadges;
-
-  // Callbacks (typed with T)
   final void Function(T) onOpen;
   final void Function(T) onAdd;
-
   final bool expiringStyle;
   final Color brandColor;
 
@@ -57,6 +52,7 @@ class ProductCard<T> extends StatelessWidget {
           borderRadius: BorderRadius.circular(_radius),
           child: Stack(
             children: [
+              // --- Image background ---
               Positioned.fill(
                 child: Image.network(
                   image,
@@ -69,6 +65,7 @@ class ProductCard<T> extends StatelessWidget {
                 ),
               ),
 
+              // --- Expiry badges ---
               if (expiringStyle && expiryBadges.isNotEmpty)
                 Positioned(
                   top: 8,
@@ -104,7 +101,28 @@ class ProductCard<T> extends StatelessWidget {
                   ),
                 ),
 
-              // Bottom blue gradient overlay
+              // --- Top-right Add (+) button ---
+              Positioned(
+                top: 2,
+                right: 8,
+                child: InkWell(
+                  customBorder: const CircleBorder(),
+                  onTap: () => onAdd(item),
+                  child: SizedBox(
+                    width: 34,
+                    height: 34,
+                    child: Padding(
+                      padding: const EdgeInsets.all(6),
+                      child: Image.asset(
+                        'assets/png/bookmark.png',
+                        fit: BoxFit.contain,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+
+              // --- Bottom overlay for title & price ---
               Positioned(
                 left: 0,
                 right: 0,
@@ -123,63 +141,72 @@ class ProductCard<T> extends StatelessWidget {
                     ),
                   ),
                   padding: const EdgeInsets.fromLTRB(12, 18, 12, 10),
-                  child: Row(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Expanded(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              title,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w600,
-                              ),
+                      Row(
+                        children: [
+                          Text(
+                            title.length > 13 ? '${title.substring(0, 14)}...' : title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis, // still keeps layout safe
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 13,
                             ),
-                            const SizedBox(height: 2),
-                            Row(
-                              children: [
-                                Text(
-                                  '\£${price.toStringAsFixed(0)}',
-                                  style: TextStyle(
-                                    color: hasOffer ? Colors.white70 : Colors.white,
-                                    decoration: hasOffer
-                                        ? TextDecoration.lineThrough
-                                        : TextDecoration.none,
-                                    fontSize: 12,
+                          ),
+
+                          const Spacer(),
+                          Transform.translate(
+                            offset: const Offset(0, 16),
+                            child: Material(
+                              color: Colors.white,
+                              shape: const CircleBorder(),
+                              elevation: 2,
+                              shadowColor: Colors.black26,
+                              child: SizedBox(
+                                width: 28,
+                                height: 28,
+                                child: Padding(
+                                  padding: const EdgeInsets.all(6),
+                                  child: Image.asset(
+                                    'assets/png/add_to_cart.png',
+                                    fit: BoxFit.contain,
                                   ),
                                 ),
-                                if (hasOffer) ...[
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    '\£${offerPrice!.toStringAsFixed(0)}',
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                ],
-                              ],
+                              ),
                             ),
-                          ],
-                        ),
-                      ),
-                      Material(
-                        color: Colors.white,
-                        shape: const CircleBorder(),
-                        child: InkWell(
-                          customBorder: const CircleBorder(),
-                          onTap: () => onAdd(item),
-                          child: SizedBox(
-                            width: 34,
-                            height: 34,
-                            child: Icon(Icons.add, size: 20, color: brandColor),
                           ),
-                        ),
+                        ],
+                      ),
+                      const SizedBox(height: 2),
+                      Row(
+                        children: [
+                          Text(
+                            '£${formatPriceSmart(price)}',
+                            style: TextStyle(
+                              color: hasOffer ? Colors.white70 : Colors.white,
+                              decoration: hasOffer
+                                  ? TextDecoration.lineThrough
+                                  : TextDecoration.none,
+                              fontSize: 12,
+                            ),
+                          ),
+                          if (hasOffer) ...[
+                            const SizedBox(width: 6),
+                            Text(
+                              '£${formatPriceSmart(offerPrice!)}',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+
+                          ],
+                        ],
                       ),
                     ],
                   ),

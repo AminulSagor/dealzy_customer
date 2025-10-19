@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import '../combine_model/product_model.dart';
-import '../combine_service/location_service.dart';
 import '../routes/app_routes.dart';
 import '../storage/token_storage.dart';
 import '../widgets/app_bottom_nav.dart';
@@ -195,8 +194,8 @@ class _Header extends StatelessWidget {
           Transform(
             alignment: Alignment.centerLeft,
             transform: Matrix4.identity()
-              ..translate(-16.0, 0.0)
-              ..scale(5.0),
+              ..translate(-16.0, 5.0)
+              ..scale(5.5),
             child: Image.asset(
               'assets/png/home_logo.png',
               height: 32,
@@ -208,71 +207,113 @@ class _Header extends StatelessWidget {
           const Spacer(),
 
           // Right: greeting + location
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              FutureBuilder<List<dynamic>>(
-                future: Future.wait<dynamic>([
-                  TokenStorage.getToken(),
-                  LocationService.getUserLocation(), // runs regardless of token
-                ]),
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Text("Loading...");
-                  }
-
-
-
-                  final token    = snapshot.data != null ? snapshot.data![0] as String? : null;
-                  final detected = snapshot.data != null ? snapshot.data![1] as String? : null;
-                  final detectedLocation = detected ?? "Detecting...";
-
-                  // ⚠️ Make it reactive to profile changes (iOS was not rebuilding before)
-                  return Obx(() {
+          Transform.translate(
+            offset: const Offset(0, -2),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                FutureBuilder<String?>(
+                  future: TokenStorage.getToken(),
+                  builder: (context, snap) {
+                    if (snap.connectionState == ConnectionState.waiting) {
+                      return const SizedBox(height: 36, child: Align(alignment: Alignment.centerRight, child: Text("Loading...")));
+                    }
+            
+                    final token = snap.data;
                     final isLoggedIn = token != null && token.isNotEmpty;
-
-                    // Name comes from controller after profile fetch
-                    final nameFromProfile = c.username.value.trim();
-                    final displayName = isLoggedIn
-                        ? (nameFromProfile.isEmpty ? '...' : nameFromProfile)
-                        : 'Guest';
-
-                    // Location prefers controller value; falls back to detected
-                    final locFromProfile = c.location.value.trim();
-                    final shownLocation = locFromProfile.isEmpty
-                        ? detectedLocation
-                        : locFromProfile;
-
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text(
-                          "Hello, $displayName",
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w600,
-                            color: Colors.black87,
+            
+                    return Obx(() {
+                      final name = c.username.value.trim();
+                      final displayName = isLoggedIn ? (name.isEmpty ? '...' : name) : 'Guest';
+            
+                      final headerLocation = c.location.value.trim(); // e.g. "Westminster,SW1A1AA"
+            
+            
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          // Top row: greeting + avatar
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Flexible(
+                                child: Text(
+                                  "Hello, $displayName",
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  textAlign: TextAlign.right,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 12,
+                                    color: Colors.black87,
+                                  ),
+                                ),
+                              ),
+            
+                            ],
                           ),
-                        ),
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(Icons.location_on_rounded, size: 16, color: HomeController.blue),
-                            const SizedBox(width: 4),
-                            Text(
-                              shownLocation,
-                              style: const TextStyle(color: Colors.black87),
+            
+                          //const SizedBox(height: 6),
+            
+                          // Second row: location chip OR sign-in pill
+                          if (isLoggedIn && headerLocation.isNotEmpty)
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF3F5F7),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(Icons.location_on_rounded, size: 16, color: HomeController.blue),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    headerLocation,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(color: Colors.black87, fontSize: 12, fontWeight: FontWeight.w600),
+                                  ),
+                                ],
+                              ),
+                            )
+                          else
+                            Material(
+                              color: HomeController.blue,
+                              shape: const StadiumBorder(),
+                              child: InkWell(
+                                onTap: () => Get.toNamed(AppRoutes.signIn),
+                                customBorder: const StadiumBorder(),
+                                child: const Padding(
+                                  padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(Icons.login, size: 14, color: Colors.white),
+                                      SizedBox(width: 6),
+                                      Text(
+                                        'Sign in',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 8,
+                                          letterSpacing: .2,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
                             ),
-                          ],
-                        ),
-                        // Separate Text so const Row above is allowed
-
-                      ],
-                    );
-                  });
-                },
-              ),
-            ],
+                        ],
+                      );
+                    });
+                  },
+                ),
+              ],
+            ),
           ),
+
         ],
       ),
     );

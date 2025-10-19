@@ -123,10 +123,54 @@ class ProductDetailsController extends GetxController {
   // at top of HomeController
   final isLoggedIn = false.obs;
   final blockedSellerIds = <String>{}.obs;
+  // cart state
+  final isAddingToCart = false.obs;
+
 
 
   void toggleDesc() => descExpanded.toggle();
   void toggleFirstReview() => firstReviewExpanded.toggle();
+
+  Future<void> onAddToCart() async {
+    if (isAddingToCart.value) return;
+    if (product.id.isEmpty) return;
+
+    try {
+      isAddingToCart.value = true;
+
+      // 🔹 Optional: check login
+      final token = await TokenStorage.getToken();
+      if (token == null || token.isEmpty) {
+        Get.dialog(const LoginRequiredDialog(), barrierDismissible: false);
+        return;
+      }
+
+      // 🔹 TODO: Call your actual add-to-cart service here
+      await Future.delayed(const Duration(milliseconds: 800)); // simulate network delay
+
+      Get.snackbar(
+        'Added to Cart',
+        '${product.title} was added successfully!',
+        snackPosition: SnackPosition.TOP,
+        backgroundColor: Colors.green.shade600,
+        colorText: Colors.white,
+        margin: const EdgeInsets.all(12),
+        duration: const Duration(seconds: 2),
+      );
+    } catch (e) {
+      Get.snackbar(
+        'Error',
+        e.toString(),
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red.shade700,
+        colorText: Colors.white,
+        margin: const EdgeInsets.all(12),
+      );
+    } finally {
+      isAddingToCart.value = false;
+    }
+  }
+
 
   Future<void> onBookmark() async {
     if (isBookmarking.value) return;
@@ -138,7 +182,7 @@ class ProductDetailsController extends GetxController {
       Get.snackbar(
         'Saved',
         res.message.isNotEmpty ? res.message : 'Bookmarked this product',
-        snackPosition: SnackPosition.BOTTOM,
+        snackPosition: SnackPosition.TOP,
         backgroundColor: Colors.green.shade600,
         colorText: Colors.white,
         margin: const EdgeInsets.all(12),

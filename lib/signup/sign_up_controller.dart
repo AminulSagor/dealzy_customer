@@ -20,14 +20,14 @@ class SignUpController extends GetxController {
   final RxBool isValid = false.obs;
   final RxBool agreed = false.obs;
 
-  // Geo args
+  // Geo args (optional)
   final RxnDouble latitude = RxnDouble();
   final RxnDouble longitude = RxnDouble();
   final RxString postalCode = ''.obs;      // e.g., 1229
   final RxString adminDistrict = ''.obs;   // e.g., Dhaka Division
-  final RxString district = ''.obs;        // e.g., Dhaka District
-  final RxString city = ''.obs;            // e.g., Dhaka
-  final RxString street = ''.obs;          // optional
+  final RxString district = ''.obs;        // e.g., Dhaka District (for UI label only)
+  final RxString city = ''.obs;            // e.g., Dhaka (for UI label only)
+  final RxString street = ''.obs;          // optional (unused in payload)
 
   late final SignupService _signupService;
 
@@ -40,17 +40,12 @@ class SignUpController extends GetxController {
     return null;
   }
 
-  // Add controller
-
-
-// ---------- validators ----------
   String? validateEmail(String? v) {
     final s = (v ?? '').trim();
     if (s.isEmpty) return 'Email is required';
     if (!GetUtils.isEmail(s)) return 'Enter a valid email';
     return null;
   }
-
 
   String? validateUsername(String? v) {
     final s = (v ?? '').trim();
@@ -66,15 +61,12 @@ class SignUpController extends GetxController {
     return null;
   }
 
-  String? validateLocationDisplay(String? _) =>
-      locationDisplayCtrl.text.trim().isEmpty ? 'Location not available' : null;
-
+  // Location is optional — no validator for it
   void _revalidate() {
+    // Validate only required fields
     isValid.value = (formKey.currentState?.validate() ?? false);
   }
-  // SignUpController
   void revalidate() => _revalidate();
-
 
   void _updateLocationLabel() {
     // Prefer: District • Postal ; fallback: District • City
@@ -84,18 +76,18 @@ class SignUpController extends GetxController {
       if (district.value.isNotEmpty) district.value,
       if (hasPostal) postalCode.value else if (hasCity) city.value,
     ];
-    locationDisplayCtrl.text = parts.join(' • ');
+    locationDisplayCtrl.text = parts.isEmpty ? '' : parts.join(' • ');
+    // Not needed for validity (location is optional), but keeps UI reactive:
     _revalidate();
   }
 
+  bool get hasLocation => latitude.value != null && longitude.value != null;
+
   // ---------- submit ----------
   Future<void> submit() async {
+    // Validate required fields only
     if (!(formKey.currentState?.validate() ?? false)) {
       _revalidate();
-      return;
-    }
-    if (latitude.value == null || longitude.value == null) {
-      Get.snackbar('Location missing', 'Please allow location to continue.');
       return;
     }
 
@@ -106,20 +98,17 @@ class SignUpController extends GetxController {
         phone: phoneCtrl.text.trim(),
         email: emailCtrl.text.trim(),
         password: passwordCtrl.text,
-        latitude: latitude.value!,
-        longitude: longitude.value!,
+        latitude: latitude.value,            // double? (nullable)
+        longitude: longitude.value,          // double? (nullable)
         postCode: postalCode.value.isEmpty ? null : postalCode.value,
-        adminDistrict: district.value.isEmpty ? null : district.value,
+        adminDistrict: adminDistrict.value.isEmpty ? null : adminDistrict.value,
+        // Note: district/city/street are NOT part of the service payload now
       );
 
       if (r.success) {
         Get.snackbar('Success', r.message.isNotEmpty ? r.message : 'User registered successfully');
-
-        // ✅ Unfocus BEFORE route change to let EditableText detach cleanly
         FocusManager.instance.primaryFocus?.unfocus();
-        // Give the framework a microtask/frame to process the focus change
         await Future<void>.delayed(const Duration(milliseconds: 1));
-
         Get.offAllNamed(AppRoutes.signIn);
       } else {
         Get.snackbar('Signup failed', r.message.isNotEmpty ? r.message : r.status);
@@ -133,7 +122,6 @@ class SignUpController extends GetxController {
       isBusy.value = false;
     }
   }
-
 
   // ---------- lifecycle ----------
   @override
@@ -159,7 +147,6 @@ class SignUpController extends GetxController {
     passwordCtrl.addListener(_revalidate);
     emailCtrl.addListener(_revalidate);
 
-
     everAll([district, postalCode, city], (_) => _updateLocationLabel());
   }
 
@@ -170,7 +157,6 @@ class SignUpController extends GetxController {
     passwordCtrl.dispose();
     locationDisplayCtrl.dispose();
     emailCtrl.dispose();
-
     super.onClose();
   }
 }

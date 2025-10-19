@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:dealzy/widgets/app_bottom_nav.dart';
+import '../routes/app_routes.dart';
 import 'user_profile_controller.dart';
 
 class UserProfileView extends GetView<UserProfileController> {
@@ -26,9 +27,13 @@ class UserProfileView extends GetView<UserProfileController> {
                     borderRadius: BorderRadius.circular(20),
                     child: Row(
                       children: const [
-                        Text('Settings',
-                            style: TextStyle(
-                                fontSize: 16, fontWeight: FontWeight.w500)),
+                        Text(
+                          'Settings',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
                         SizedBox(width: 8),
                         Icon(Icons.settings, size: 20),
                       ],
@@ -51,11 +56,19 @@ class UserProfileView extends GetView<UserProfileController> {
                       CircleAvatar(
                         radius: size / 2,
                         backgroundColor: Colors.grey.shade200,
-                        backgroundImage: (c.avatar.value.isNotEmpty && c.avatar.value.startsWith('http'))
+                        backgroundImage:
+                            (c.avatar.value.isNotEmpty &&
+                                c.avatar.value.startsWith('http'))
                             ? NetworkImage(c.avatar.value)
                             : null,
-                        child: (c.avatar.value.isEmpty || !c.avatar.value.startsWith('http'))
-                            ? const Icon(Icons.person, color: Colors.grey, size: 32)
+                        child:
+                            (c.avatar.value.isEmpty ||
+                                !c.avatar.value.startsWith('http'))
+                            ? const Icon(
+                                Icons.person,
+                                color: Colors.grey,
+                                size: 32,
+                              )
                             : null,
                       ),
 
@@ -71,7 +84,9 @@ class UserProfileView extends GetView<UserProfileController> {
                               child: SizedBox(
                                 width: 28,
                                 height: 28,
-                                child: CircularProgressIndicator(strokeWidth: 2.4),
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2.4,
+                                ),
                               ),
                             ),
                           ),
@@ -83,17 +98,26 @@ class UserProfileView extends GetView<UserProfileController> {
                         bottom: -7,
                         child: Container(
                           padding: const EdgeInsets.all(3),
-                          decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+                          decoration: const BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                          ),
                           child: Material(
                             color: const Color(0xFF124A89),
                             shape: const CircleBorder(),
                             child: InkWell(
                               customBorder: const CircleBorder(),
-                              onTap: c.isUploadingAvatar.value ? null : c.changeAvatar,
+                              onTap: c.isUploadingAvatar.value
+                                  ? null
+                                  : c.changeAvatar,
                               child: const SizedBox(
                                 width: 24,
                                 height: 24,
-                                child: Icon(Icons.camera_alt, color: Colors.white, size: 14),
+                                child: Icon(
+                                  Icons.camera_alt,
+                                  color: Colors.white,
+                                  size: 14,
+                                ),
                               ),
                             ),
                           ),
@@ -101,72 +125,177 @@ class UserProfileView extends GetView<UserProfileController> {
                       ),
                     ],
                   );
-
                 }),
               ],
             ),
 
             const SizedBox(height: 8),
-            Obx(() => Text(
-              c.name.value,
-              style: const TextStyle(
-                  fontSize: 16, fontWeight: FontWeight.w500),
-            )),
+            Obx(
+              () => Text(
+                c.name.value,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
             const SizedBox(height: 2),
-            Obx(() => Text(
-              c.location.value,
-              style: const TextStyle(
-                  fontSize: 16, fontWeight: FontWeight.w700),
-            )),
+            Obx(
+              () => Text(
+                c.location.value,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
             const SizedBox(height: 12),
             const Divider(height: 1),
 
             // Collection
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.fromLTRB(16, 16, 0, 16),
+            const SizedBox(height: 12),
+
+            /// ✅ Available Coins Section
+            Obx(
+              () => Container(
+                margin: const EdgeInsets.symmetric(horizontal: 16),
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF124A89),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      "Available Coins",
+                      style: TextStyle(color: Colors.white, fontSize: 15),
+                    ),
+                    Text(
+                      "${controller.coins.value}",
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 14),
+
+            /// ✅ Order Status Section
+            /// ✅ Order Status Section
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    'Collection',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                    "My Orders",
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
-                  const SizedBox(height: 12),
-
-                  Obx(() {
-                    // empty state
-                    if (c.collection.isEmpty) {
-                      return SizedBox(
-                        height: 140,
-                        child: Row(
-                          children: const [
-                            SizedBox(width: 8),
-                            Icon(Icons.bookmark_border, color: Colors.black54),
-                            SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                'You do not have any bookmarked items.',
-                                style: TextStyle(color: Colors.black87),
+                  const SizedBox(height: 10),
+                  Obx(() => Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: controller.orders.map((o) {
+                      return Expanded(
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(12),
+                          onTap: () => Get.toNamed(
+                            AppRoutes.orderList, // ✅ your new route
+                            arguments: {'status': o.label}, // pass which tab to show
+                          ),
+                          child: Column(
+                            children: [
+                              Container(
+                                height: 45,
+                                width: 45,
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF004EB5),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Image.asset(o.image, fit: BoxFit.contain),
                               ),
-                            ),
-                          ],
+                              const SizedBox(height: 6),
+                              Text(
+                                o.label,
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       );
-                    }
+                    }).toList(),
+                  )),
+                ],
+              ),
+            ),
 
-                    // normal list + footer loader
-                    final showFooter = c.isLoadingMore.value;
-                    final count = c.collection.length + (showFooter ? 1 : 0);
 
-                    return SizedBox(
+            const SizedBox(height: 14),
+            const Divider(height: 1),
+
+            // ✅ Continue your Collection section as before
+            Expanded(
+              child: Obx(() {
+                if (c.isLoading.value) {
+                  // 🔹 Show loading indicator
+                  return const Center(
+                    child: CircularProgressIndicator(color: Color(0xFF124A89)),
+                  );
+                }
+
+                if (c.error.value != null) {
+                  // 🔹 Show error message (optional)
+                  return Center(
+                    child: Text(
+                      'Error: ${c.error.value}',
+                      style: const TextStyle(color: Colors.red),
+                    ),
+                  );
+                }
+
+                if (c.collection.isEmpty) {
+                  // 🔹 Empty state
+                  return const Center(
+                    child: Text(
+                      'You do not have any bookmarked items.',
+                      style: TextStyle(color: Colors.black54),
+                    ),
+                  );
+                }
+
+                // 🔹 Main list
+                final showFooter = c.isLoadingMore.value;
+                final count = c.collection.length + (showFooter ? 1 : 0);
+
+                return ListView(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 0, 16),
+                  children: [
+                    const Text(
+                      'Collection',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                    ),
+                    const SizedBox(height: 12),
+                    SizedBox(
                       height: 220,
                       child: ListView.separated(
-                        controller: c.collectionCtrl,        // <-- wired
+                        controller: c.collectionCtrl,
                         scrollDirection: Axis.horizontal,
                         padding: const EdgeInsets.only(right: 16),
-                        itemCount: count,                     // <-- includes footer
+                        itemCount: count,
                         separatorBuilder: (_, __) => const SizedBox(width: 16),
                         itemBuilder: (_, i) {
-                          // footer cell
                           if (showFooter && i == count - 1) {
                             return const SizedBox(
                               width: 165,
@@ -188,17 +317,18 @@ class UserProfileView extends GetView<UserProfileController> {
                           );
                         },
                       ),
-                    );
-                  }),
-                ],
-              ),
+                    ),
+                  ],
+                );
+              }),
             ),
+
           ],
         ),
       ),
 
       // Bottom nav: user tab selected (index 3)
-      bottomNavigationBar: const AppBottomNav(currentIndex: 3),
+      bottomNavigationBar: const AppBottomNav(currentIndex: 4),
     );
   }
 }

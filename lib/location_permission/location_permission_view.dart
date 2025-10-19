@@ -19,6 +19,14 @@ class LocationPermissionView extends GetView<LocationPermissionController> {
 
     return Scaffold(
       backgroundColor: const Color(0xFF124A89),
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF124A89),
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () => Get.back(), // or Navigator.pop(context)
+        ),
+      ),
       body: Padding(
         padding: EdgeInsets.only(top: 120.h),
         child: SafeArea(
@@ -30,7 +38,7 @@ class LocationPermissionView extends GetView<LocationPermissionController> {
               children: [
                 // Card pushed down so the logo can overlap
                 Padding(
-                  padding: EdgeInsets.only(top: logoHeight - overlap),
+                  padding: EdgeInsets.only(top: logoHeight - overlap-70.h),
                   child: Card(
                     elevation: 3,
                     color: Colors.white,
@@ -84,13 +92,9 @@ class LocationPermissionView extends GetView<LocationPermissionController> {
                         ),
 
                         // BODY with padding (separate from header)
+                        // BODY with padding (separate from header)
                         Padding(
-                          padding: EdgeInsets.fromLTRB(
-                            16.w,
-                            1.h, // space for the overlapping pin
-                            16.w,
-                            20.h,
-                          ),
+                          padding: EdgeInsets.fromLTRB(16.w, 1.h, 16.w, 20.h),
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
@@ -103,21 +107,19 @@ class LocationPermissionView extends GetView<LocationPermissionController> {
                                 textAlign: TextAlign.center,
                               ),
                               SizedBox(height: 16.h),
+
+                              // Primary: Get Location
                               SizedBox(
                                 width: 0.78.sw,
                                 height: 48.h,
                                 child: Obx(() {
                                   final busy = controller.isBusy.value;
                                   return ElevatedButton(
-                                    onPressed: busy
-                                        ? null
-                                        : controller.requestLocation,
+                                    onPressed: busy ? null : controller.requestLocation,
                                     style: ElevatedButton.styleFrom(
                                       backgroundColor: const Color(0xFF124A89),
                                       foregroundColor: Colors.white,
-                                      disabledBackgroundColor: const Color(
-                                        0xFF124A89,
-                                      ).withOpacity(0.5),
+                                      disabledBackgroundColor: const Color(0xFF124A89).withOpacity(0.5),
                                       disabledForegroundColor: Colors.white70,
                                       shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(14.r),
@@ -129,19 +131,41 @@ class LocationPermissionView extends GetView<LocationPermissionController> {
                                         const Icon(Icons.location_on_outlined),
                                         SizedBox(width: 10.w),
                                         Text(
-                                          busy ? 'Please wait…' : 'Get Location',
-                                          style: const TextStyle(
-                                            fontWeight: FontWeight.w700,
-                                          ),
+                                          busy ? 'Please wait…' : 'Continue with Location',
+                                          style: const TextStyle(fontWeight: FontWeight.w700),
                                         ),
                                       ],
                                     ),
                                   );
                                 }),
                               ),
+
+                              SizedBox(height: 10.h),
+
+                              // Secondary: Continue without location
+                              SizedBox(
+                                width: 0.78.sw,
+                                height: 46.h,
+                                child: OutlinedButton(
+                                  onPressed: controller.continueWithoutLocation,
+                                  style: OutlinedButton.styleFrom(
+                                    side: const BorderSide(color: Color(0xFF124A89), width: 1.2),
+                                    foregroundColor: const Color(0xFF124A89),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(14.r),
+                                    ),
+                                  ),
+                                  child: const Text(
+                                    ' Continue without location',
+                                    style: TextStyle(fontWeight: FontWeight.w700),
+                                  ),
+                                ),
+                              ),
+
                             ],
                           ),
                         ),
+
                       ],
                     ),
                   ),
@@ -149,7 +173,7 @@ class LocationPermissionView extends GetView<LocationPermissionController> {
 
                 // Overlapping logo
                 Positioned(
-                  top: 0,
+                  top: -70,
                   child: Image.asset(
                     'assets/png/logo.png',
                     height: logoHeight,

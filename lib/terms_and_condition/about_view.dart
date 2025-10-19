@@ -1,8 +1,21 @@
-
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class AboutView extends StatelessWidget {
   const AboutView({super.key});
+
+  static final Uri _privacyUri = Uri.parse(
+    'https://dealzyloop.com/privacy-policy-customer.html',
+  );
+
+  Future<void> _openExternal(BuildContext context, Uri uri) async {
+    final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (!ok && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Couldn’t open link. Please try again.')),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -18,13 +31,11 @@ class AboutView extends StatelessWidget {
         ),
         title: const Text('About'),
       ),
-
       body: SingleChildScrollView(
-        padding: const EdgeInsets.only(left: 20,right: 20,bottom: 20),
+        padding: const EdgeInsets.only(left: 20, right: 20, bottom: 20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header
             Center(
               child: Text(
                 'DealzyLoop',
@@ -41,43 +52,51 @@ class AboutView extends StatelessWidget {
             ),
             const SizedBox(height: 20),
 
-            // Features list
-            _FeatureItem(
+            const _FeatureItem(
               icon: Icons.shopping_cart_outlined,
               title: 'Shop Easily',
-              description:
-              'Browse a wide variety of products listed by sellers.',
+              description: 'Browse a wide variety of products listed by sellers.',
             ),
-            _FeatureItem(
+            const _FeatureItem(
               icon: Icons.verified_outlined,
               title: 'Buy With Confidence',
               description:
               'Every product is reviewed and approved by the admin before it’s available.',
             ),
-            _FeatureItem(
+            const _FeatureItem
+              (
               icon: Icons.block_outlined,
               title: 'Stay Protected',
-              description:
-              'Block or report any seller instantly if you face issues.',
+              description: 'Block or report any seller instantly if you face issues.',
             ),
-            _FeatureItem(
+            const _FeatureItem(
               icon: Icons.lock_outline,
               title: 'Secure Shopping',
-              description:
-              'Enjoy a safe, user-friendly checkout process.',
+              description: 'Enjoy a safe, user-friendly checkout process.',
             ),
-            _FeatureItem(
+            const _FeatureItem(
               icon: Icons.security_outlined,
               title: 'Data Privacy Guaranteed',
               description:
               'Your personal and payment information is encrypted and stored securely. We never share customer data with third parties.',
             ),
-            const SizedBox(height: 20),
 
-            // Closing note
+            const SizedBox(height: 20),
             Text(
               'At DealzyLoop, we focus on quality, trust, and data safety so you can shop with complete peace of mind.\n\nYour marketplace, your choice — welcome to DealzyLoop!',
               style: theme.textTheme.bodyMedium?.copyWith(height: 1.4),
+            ),
+            const SizedBox(height: 30),
+
+            Center(
+              child: TextButton.icon(
+                icon: const Icon(Icons.privacy_tip_outlined),
+                label: const Text('Privacy Policy'),
+                onPressed: () => _openExternal(context, _privacyUri),
+                style: TextButton.styleFrom(
+                  foregroundColor: const Color(0xFF124A89),
+                ),
+              ),
             ),
           ],
         ),
@@ -110,11 +129,11 @@ class _FeatureItem extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                      fontWeight: FontWeight.w600, fontSize: 16),
-                ),
+                Text(title,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 16,
+                    )),
                 const SizedBox(height: 2),
                 Text(
                   description,

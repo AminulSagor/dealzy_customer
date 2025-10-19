@@ -47,9 +47,9 @@ class HomeController extends GetxController {
   final UserProfileService _profileService;
   final BookmarkService _bookmarkService = BookmarkService();
 
-  // ---- Header (reactive, will be overridden by profile if available) ----
   final username = ''.obs;
   final location = ''.obs;
+
   final avatarUrl = ''.obs;
 
   // search
@@ -227,7 +227,7 @@ class HomeController extends GetxController {
       Get.snackbar(
         'Saved',
         res.message.isNotEmpty ? res.message : 'Bookmarked "${item.title}"',
-        snackPosition: SnackPosition.BOTTOM,
+        snackPosition: SnackPosition.TOP,
         backgroundColor: const Color(0xFF2E7D32),
         colorText: Colors.white,
         margin: const EdgeInsets.all(12),

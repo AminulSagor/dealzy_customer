@@ -14,7 +14,13 @@ import '../forget_password/forget_password_controller.dart';
 import '../forget_password/forget_password_view.dart';
 import '../location_permission/location_permission_controller.dart';
 import '../location_permission/location_permission_view.dart';
+import '../my_cart/my_cart_controller.dart';
+import '../my_cart/my_cart_view.dart';
 import '../no_internet_view.dart';
+import '../order/order_list_controller.dart';
+import '../order/order_list_view.dart';
+import '../order_confirmation/order_confirmation_controller.dart';
+import '../order_confirmation/order_confirmation_view.dart';
 import '../otp/otp_verification_controller.dart';
 import '../otp/otp_verification_view.dart';
 import '../see_all product/collection_controller.dart';
@@ -173,6 +179,30 @@ class AppPages {
       name: AppRoutes.userAgreement,
       page: () => const DealzyloopUserAgreementPage(),
     ),
+
+    GetPage(
+      name: AppRoutes.cart,
+      page: () => const MyCartView(),
+      binding: BindingsBuilder(() {
+        Get.put(MyCartController());
+      }),
+    ),
+    GetPage(
+      name: AppRoutes.orderConfirmation,
+      page: () => const OrderConfirmationView(),
+      binding: BindingsBuilder(() {
+        Get.put(OrderConfirmationController());
+      }),
+    ),
+
+    GetPage(
+      name: AppRoutes.orderList,
+      page: () => const OrderListView(),
+      binding: BindingsBuilder(() {
+        Get.lazyPut(() => OrderListController());
+      }),
+    ),
+
 
 
 

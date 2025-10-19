@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:get/get.dart';
 import '../routes/app_pages.dart';
 import '../routes/app_routes.dart';
 import '../storage/token_storage.dart';
@@ -10,7 +11,7 @@ class AppBottomNav extends StatelessWidget {
   const AppBottomNav({
     super.key,
     required this.currentIndex,
-    this.onTap, // optional override if a page needs custom behavior
+    this.onTap,
     this.barColor = const Color(0xFF124A89),
     this.activeColor = Colors.white,
     this.inactiveColor = const Color(0xCCFFFFFF),
@@ -22,41 +23,38 @@ class AppBottomNav extends StatelessWidget {
   final Color activeColor;
   final Color inactiveColor;
 
-  // single source of truth for tab -> route mapping
   static final Map<int, String> _routeByIndex = {
     0: AppRoutes.home,
     1: AppRoutes.storeSearch,
     2: AppRoutes.notification,
-    3: AppRoutes.userProfile,
+    3: AppRoutes.cart,
+    4: AppRoutes.userProfile,
   };
 
-  // Sync wrapper for async navigation handler
   void _onTap(int i) {
     _handleTap(i);
   }
 
   Future<void> _handleTap(int i) async {
-    if (i == currentIndex) return; // already on this tab
+    if (i == currentIndex) return;
 
-    // If navigating to User Profile, ensure auth
     if (i == 1 || i == 3) {
       final token = await TokenStorage.getToken();
       if (token == null || token.isEmpty) {
-        // Show login-required dialog and stop navigation
         Get.dialog(const LoginRequiredDialog(), barrierDismissible: false);
         return;
       }
     }
 
     final route = _routeByIndex[i];
-    if (route != null) {
-      // Swap root to the tab
-      Get.offAllNamed(route);
-    }
+    if (route != null) Get.offAllNamed(route);
   }
 
   @override
   Widget build(BuildContext context) {
+    // initialize ScreenUtil context if not already
+    ScreenUtil.init(context);
+
     final items = <_NavItem>[
       _NavItem(
         index: 0,
@@ -78,6 +76,12 @@ class AppBottomNav extends StatelessWidget {
       ),
       _NavItem(
         index: 3,
+        label: 'Cart',
+        selectedIcon: 'assets/svg/cart_selected.svg',
+        unselectedIcon: 'assets/svg/cart.svg',
+      ),
+      _NavItem(
+        index: 4,
         label: 'User',
         selectedIcon: 'assets/svg/user.svg',
         unselectedIcon: 'assets/svg/user_not_selected.svg',
@@ -87,17 +91,17 @@ class AppBottomNav extends StatelessWidget {
     return SafeArea(
       top: false,
       child: Container(
-        height: 64,
-        padding: const EdgeInsets.symmetric(horizontal: 12),
+        height: 64.h,
+        padding: EdgeInsets.symmetric(horizontal: 8.w),
         color: barColor,
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: items.map((it) {
             final isActive = currentIndex == it.index;
             return _buildItem(
               item: it,
               isActive: isActive,
-              onPressed: onTap ?? _onTap, // uses our guarded handler by default
+              onPressed: onTap ?? _onTap,
               activeColor: activeColor,
               inactiveColor: inactiveColor,
               barColor: barColor,
@@ -116,40 +120,45 @@ class AppBottomNav extends StatelessWidget {
     required Color inactiveColor,
     required Color barColor,
   }) {
-    // Touch target
     return InkWell(
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(12.r),
       onTap: () => onPressed(item.index),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8),
+        padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 6.h),
         child: isActive
-        // SELECTED: show icon only, inside a white circle
             ? Container(
-          padding: const EdgeInsets.all(8),
+          padding: EdgeInsets.all(8.w),
           decoration: const BoxDecoration(
             color: Colors.white,
             shape: BoxShape.circle,
           ),
           child: _svg(
             item.selectedIcon,
-            // tint to bar color for contrast inside white circle
             color: barColor,
-            size: 22,
+            size: 22.sp,
           ),
         )
-        // UNSELECTED: show icon + text side-by-side
-            : Row(
-          children: [
-            _svg(item.unselectedIcon, color: inactiveColor, size: 22),
-            const SizedBox(width: 6),
-            Text(
-              item.label,
-              style: TextStyle(
-                color: inactiveColor,
-                fontWeight: FontWeight.w500,
+            : ConstrainedBox(
+          constraints: BoxConstraints(maxWidth: 80.w),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _svg(item.unselectedIcon,
+                  color: inactiveColor, size: 20.sp),
+              SizedBox(width: 4.w),
+              Flexible(
+                child: Text(
+                  item.label,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: inactiveColor,
+                    fontWeight: FontWeight.w500,
+                    fontSize: 12.sp,
+                  ),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -160,7 +169,6 @@ class AppBottomNav extends StatelessWidget {
       path,
       width: size,
       height: size,
-      // If your SVGs already have the desired colors, remove `colorFilter`.
       colorFilter: color != null
           ? ColorFilter.mode(color, BlendMode.srcIn)
           : null,

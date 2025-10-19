@@ -17,4 +17,7 @@ class AppRoutes {
   static const otpVerification = '/otp-verification';
   static const updatePassword = '/update-password';
   static const String userAgreement = '/user-agreement';
+  static const cart = '/cart';
+  static const orderConfirmation = '/orderConfirmation';
+  static const orderList = '/order-list';
 }

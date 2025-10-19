@@ -1,9 +1,8 @@
 import 'package:dealzy/store_search/store_item_model.dart';
-import 'package:dealzy/store_search/store_search_service.dart';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../widgets/app_bottom_nav.dart';
-        // SuggestionItem { adminDis, postCode? }
 import 'filter_service.dart';
 import 'store_search_controller.dart';
 

@@ -16,24 +16,26 @@ class LocationPermissionController extends GetxController {
       // --- Service check
       final serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
-        Get.snackbar('Location disabled', 'Please enable Location services.');
+        Get.snackbar('Location services are off', 'No problem, It is optional.');
+        _goNext();
         return;
       }
 
       // --- Permission check
-      LocationPermission permission = await Geolocator.checkPermission();
-
-
+      var permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
       }
+
       if (permission == LocationPermission.denied) {
-        Get.snackbar('Permission denied', 'Location is required to show nearby deals.');
+        Get.snackbar('Permission denied', 'No problem, It is optional.');
+        _goNext();
         return;
       }
+
       if (permission == LocationPermission.deniedForever) {
-        Get.snackbar('Permission permanently denied', 'Enable it from Settings.');
-        await Geolocator.openAppSettings();
+        Get.snackbar('Permission permanently denied', 'No problem, It is optional.');
+        _goNext();
         return;
       }
 
@@ -44,75 +46,76 @@ class LocationPermissionController extends GetxController {
           desiredAccuracy: LocationAccuracy.high,
           timeLimit: const Duration(seconds: 10),
         );
-      } on TimeoutException catch (_) {
-
+      } on TimeoutException {
         pos = await Geolocator.getLastKnownPosition();
       }
 
       if (pos == null) {
-        Get.snackbar('Location error', 'Unable to get your current position.');
+        Get.snackbar('Couldn’t get location', 'Proceeding without location.');
+        _goNext();
         return;
       }
 
-      final double latitude = pos.latitude;
-      final double longitude = pos.longitude;
+      final latitude = pos.latitude;
+      final longitude = pos.longitude;
 
-
-      // --- Reverse geocoding (robust)
+      // --- Reverse geocoding (best-effort)
       final resolved = await _resolveAddress(latitude, longitude);
 
-
-
-      // --- Build arguments for next screen
-      final args = <String, dynamic>{
+      // --- Navigate with args
+      _goNext({
         'latitude': latitude,
         'longitude': longitude,
-        'postalCode': resolved.postal,            // now likely filled if available
-        'adminDistrict': resolved.admin,          // e.g., Dhaka Division
-        'district': resolved.district,            // e.g., Dhaka
-        'city': resolved.locality,                // optional extra context
-      };
-
-      // --- Navigate
-      Get.offAllNamed(AppRoutes.signUp, arguments: args);
-    } catch (e, st) {
-      Get.snackbar('Error', e.toString());
+        'postalCode': resolved.postal,
+        'adminDistrict': resolved.admin,
+        'district': resolved.district,
+        'city': resolved.locality,
+      });
+    } catch (e) {
+      Get.snackbar('Location error', 'Proceeding without location. (${e.runtimeType})');
+      _goNext();
     } finally {
       isBusy.value = false;
     }
   }
 
-  /// Tries to get a Placemark with a non-empty postal code.
-  /// Falls back to first placemark if none have a postal code.
+  /// User pressed "Next / Continue without location"
+  void continueWithoutLocation() {
+    _goNext({
+      'latitude': null,
+      'longitude': null,
+      'manual': false, // optional flag for downstream logic
+    });
+  }
+
+  /// Centralized navigation for both flows
+  void _goNext([Map<String, dynamic>? args]) {
+    Get.toNamed(AppRoutes.signUp, arguments: args);
+  }
+
+  /// Tries to get a Placemark with postalCode; falls back to first.
   Future<_ResolvedPlacemark> _resolveAddress(double lat, double lng) async {
     List<Placemark> marks = [];
 
     try {
-      // 1) default lookup
       marks = await placemarkFromCoordinates(lat, lng);
-      _debugList('default', marks);
-
-      // 2) retry with Bangladesh locale if postal is missing
       if (_bestWithPostal(marks) == null) {
         final retry = await placemarkFromCoordinates(lat, lng, localeIdentifier: 'en_BD');
         if (retry.isNotEmpty) {
           marks = retry;
-          _debugList('en_BD', marks);
         }
       }
-    } catch (e) {
+    } catch (_) {
+      // ignore geocoding failures
     }
 
-    if (marks.isEmpty) {
-      return const _ResolvedPlacemark();
-    }
-
+    if (marks.isEmpty) return const _ResolvedPlacemark();
     final best = _bestWithPostal(marks) ?? marks.first;
 
     return _ResolvedPlacemark(
       postal: (best.postalCode ?? '').isNotEmpty ? best.postalCode : null,
-      admin: best.administrativeArea,         // Division (BD)
-      district: best.subAdministrativeArea,   // District (BD)
+      admin: best.administrativeArea,
+      district: best.subAdministrativeArea,
       locality: best.locality,
       subLocality: best.subLocality,
       country: best.country,
@@ -126,16 +129,6 @@ class LocationPermissionController extends GetxController {
       if ((p.postalCode ?? '').trim().isNotEmpty) return p;
     }
     return null;
-  }
-
-  void _debugList(String tag, List<Placemark> list) {
-    if (list.isEmpty) {
-      return;
-    }
-    for (var i = 0; i < list.length; i++) {
-      final p = list[i];
-
-    }
   }
 }
 

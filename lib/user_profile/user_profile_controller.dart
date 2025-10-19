@@ -5,7 +5,11 @@ import 'package:dealzy/widgets/login_required_dialog.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
 import '../routes/app_routes.dart';
-
+class OrderStatusItem {
+  final String label;
+  final String image;
+  const OrderStatusItem(this.label, this.image);
+}
 class ProductItem {
   final String id;
   final String title;
@@ -20,6 +24,8 @@ class ProductItem {
     required this.price,
     this.offerPrice,
   });
+
+
 
   factory ProductItem.fromBookmarked(BookmarkedProduct b) => ProductItem(
     id: b.productId,
@@ -54,6 +60,13 @@ class UserProfileController extends GetxController {
   final isUploadingAvatar = false.obs;
 
 
+  final coins = 0.obs;
+
+  // ✅ Orders
+  final RxList<OrderStatusItem> orders = <OrderStatusItem>[].obs;
+
+
+
   // Horizontal list scroll controller for pagination
   final ScrollController collectionCtrl = ScrollController();
 
@@ -63,6 +76,8 @@ class UserProfileController extends GetxController {
     _loadProfile();
     fetchFirstPage();
     collectionCtrl.addListener(_onCollectionScroll);
+    loadOrders();
+    coins.value = 320;
   }
 
   @override
@@ -71,7 +86,13 @@ class UserProfileController extends GetxController {
     collectionCtrl.dispose();
     super.onClose();
   }
-
+  void loadOrders() {
+    orders.assignAll([
+      const OrderStatusItem('Pending', 'assets/png/oder/pending.png'),
+      const OrderStatusItem('Approved', 'assets/png/oder/approved.png'),
+      const OrderStatusItem('Delivered', 'assets/png/oder/delivered.png'),
+    ]);
+  }
   void _onCollectionScroll() {
     if (!collectionCtrl.hasClients) return;
     final pos = collectionCtrl.position;

@@ -4,7 +4,7 @@ description: "A new Flutter project."
 publish_to: 'none'
 
 
-version: 1.1.10+11
+version: 1.1.16+17
 
 environment:
   sdk: ^3.9.0-333.2.beta
@@ -16,6 +16,7 @@ dependencies:
   flutter_screenutil: ^5.9.0
   flutter_svg: ^2.0.10+1
   geocoding: ^2.2.0
+  confetti:
 
 
   cupertino_icons: ^1.0.8
@@ -48,6 +49,7 @@ flutter:
     - assets/png/
     - assets/svg/
     - .env
+    - assets/png/oder/
 
 flutter_native_splash:
   android: true
