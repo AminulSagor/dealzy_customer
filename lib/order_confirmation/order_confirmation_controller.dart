@@ -1,16 +1,24 @@
+import 'package:dealzy/routes/app_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
-import '../my_cart/my_cart_controller.dart';
+import '../my_cart/get_carts_service.dart';
+import 'get_discount_service.dart';
 
 class OrderConfirmationController extends GetxController {
   final RxList<CartItem> items = <CartItem>[].obs;
   final RxDouble discount = 0.0.obs;
   final RxString voucher = ''.obs;
 
-  // 🔹 New coin-related fields
-  final RxInt availableCoins = 200.obs; // Example balance
+  // 🔹 Coin-related fields
+  final RxInt availableCoins = 0.obs;
+  final RxInt minimumUse = 0.obs;
   final RxInt usedCoins = 0.obs;
+
+  // 🔹 Loading state for API call
+  final RxBool isApplying = false.obs;
+
+  final _discountService = GetDiscountService();
 
   double get subtotal =>
       items.fold(0, (sum, e) => sum + e.price * e.quantity.value);
@@ -22,47 +30,101 @@ class OrderConfirmationController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    final argItems = Get.arguments as List<CartItem>?;
+    final argItems = Get.arguments['items'] as List<CartItem>?;
+    final argCoindata = Get.arguments['coinData'] as Map<String, int>?;
+
     if (argItems != null) items.assignAll(argItems);
+    if (argCoindata != null) {
+      availableCoins.value = argCoindata['available'] ?? 0;
+      minimumUse.value = argCoindata['minimum'] ?? 0;
+    }
   }
 
-  void applyVoucher(String code) {
-    if (code.trim().toUpperCase() == "SAVE10") {
-      discount.value = subtotal * 0.10;
-      _showDialog(
-        title: "Congratulations!",
-        message: "Voucher applied successfully.\nYou got 10% off!",
-        icon: Icons.celebration_rounded,
-        iconColor: Colors.orangeAccent,
-        buttonText: "Awesome 🎉",
-        buttonColor: const Color(0xFF124A89),
+  /// 🟦 Combine voucher + coin usage into one function
+  Future<void> applyDiscount({String? voucherCode, int? coinsToUse}) async {
+    if (subtotal <= 0) {
+      Get.snackbar("Cart Empty", "Please add items before applying discount.");
+      return;
+    }
+
+    isApplying.value = true;
+    discount.value = 0; // reset before call
+
+    try {
+      final res = await _discountService.estimateDiscount(
+        subTotal: subtotal,
+        coupon: voucherCode,
+        coins: coinsToUse,
       );
-    } else {
-      discount.value = 0;
+
+      if (res.isSuccess) {
+        // ✅ Update discount
+        discount.value = res.discount;
+
+        // ✅ Save states
+        voucher.value = voucherCode ?? '';
+        usedCoins.value = coinsToUse ?? 0;
+
+        _showDialog(
+          title: "Discount Applied!",
+          message: res.message.isNotEmpty
+              ? res.message
+              : "Your discount has been successfully applied.",
+          icon: Icons.celebration_rounded,
+          iconColor: Colors.green,
+          buttonText: "OK",
+          buttonColor: const Color(0xFF124A89),
+        );
+      } else {
+        _showDialog(
+          title: "No Discount",
+          message: res.message.isNotEmpty
+              ? res.message
+              : "No valid coupon or coins applied.",
+          icon: Icons.info_outline,
+          iconColor: Colors.orange,
+          buttonText: "OK",
+          buttonColor: Colors.orange,
+        );
+      }
+    } catch (e) {
       _showDialog(
-        title: "Invalid Voucher",
-        message: "Please check the code and try again.",
+        title: "Error",
+        message: e.toString().replaceAll('Exception:', '').trim(),
         icon: Icons.error_outline,
         iconColor: Colors.redAccent,
         buttonText: "Try Again",
         buttonColor: Colors.redAccent,
       );
+    } finally {
+      isApplying.value = false;
     }
   }
 
-  void useCoins(int amount) {
-    if (amount <= 0) return;
-    if (amount > availableCoins.value) {
-      Get.snackbar("Insufficient Coins", "You only have ${availableCoins.value} coins.");
-      return;
-    }
-    usedCoins.value = amount;
+  void clearDiscount() {
+    discount.value = 0;
+    voucher.value = '';
+    usedCoins.value = 0;
   }
-
-  void clearCoins() => usedCoins.value = 0;
 
   void proceedToStripe() {
     Get.snackbar("Stripe", "Redirecting to payment...");
+  }
+
+  void onGoOrders() {
+    Get.offNamedUntil(
+      AppRoutes.orderList,
+      arguments: {'status': 'Pending'},
+      (route) => route.settings.name == AppRoutes.home,
+    );
+  }
+
+  void onGoHome() {
+    Get.offAllNamed(AppRoutes.home);
+  }
+
+  void onConfirmOrder() {
+    // TODO: connect to backend order confirmation
   }
 
   void _showDialog({
@@ -82,11 +144,7 @@ class OrderConfirmationController extends GetxController {
             color: Colors.white,
             borderRadius: BorderRadius.circular(20.r),
             boxShadow: [
-              BoxShadow(
-                color: Colors.black12,
-                blurRadius: 10,
-                spreadRadius: 3,
-              ),
+              BoxShadow(color: Colors.black12, blurRadius: 10, spreadRadius: 3),
             ],
           ),
           child: Column(
@@ -121,8 +179,10 @@ class OrderConfirmationController extends GetxController {
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8.r),
                   ),
-                  padding:
-                  EdgeInsets.symmetric(horizontal: 24.w, vertical: 10.h),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 24.w,
+                    vertical: 10.h,
+                  ),
                 ),
                 child: Text(
                   buttonText,

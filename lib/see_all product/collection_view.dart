@@ -24,28 +24,30 @@ class CollectionView extends GetView<CollectionController> {
         appBar: isFromHome
             ? null
             : AppBar(
-          backgroundColor: Colors.white,
-          elevation: 0.5,
-          automaticallyImplyLeading: false,
-          leading: IconButton(
-            onPressed: c.back,
-            icon: const Icon(Icons.arrow_back_ios_new_rounded,
-                size: 20, color: Colors.black87),
-            tooltip: 'Back',
-          ),
-          title: Text(
-            // 1) Category name has highest priority
-            c.categoryName?.isNotEmpty == true
-                ? c.categoryName!
-            // 2) Otherwise show the title you passed from Home (Regular Offer, Expiring Offer, Clearance Offer)
-                : (c.screenTitle.isNotEmpty
-                ? c.screenTitle
-            // 3) Fallback
-                : 'Collections'),
-            style: const TextStyle(color: Colors.black87),
-          ),
-
-        ),
+                backgroundColor: Colors.white,
+                elevation: 0.5,
+                automaticallyImplyLeading: false,
+                leading: IconButton(
+                  onPressed: c.back,
+                  icon: const Icon(
+                    Icons.arrow_back_ios_new_rounded,
+                    size: 20,
+                    color: Colors.black87,
+                  ),
+                  tooltip: 'Back',
+                ),
+                title: Text(
+                  // 1) Category name has highest priority
+                  c.categoryName?.isNotEmpty == true
+                      ? c.categoryName!
+                      // 2) Otherwise show the title you passed from Home (Regular Offer, Expiring Offer, Clearance Offer)
+                      : (c.screenTitle.isNotEmpty
+                            ? c.screenTitle
+                            // 3) Fallback
+                            : 'Collections'),
+                  style: const TextStyle(color: Colors.black87),
+                ),
+              ),
 
         body: Column(
           children: [
@@ -73,7 +75,6 @@ class CollectionView extends GetView<CollectionController> {
                 ),
               ),
 
-
             // rest stays the same
             Expanded(
               child: RefreshIndicator(
@@ -99,16 +100,22 @@ class CollectionView extends GetView<CollectionController> {
                                   _ErrorState(
                                     message: err,
                                     onRetry: () => c.fetchFirstPage(
-                                        limit: c.pageSize.value),
+                                      limit: c.pageSize.value,
+                                    ),
                                   ),
                                 ] else if (fromHome && !hasQuery) ...[
-                                  const Icon(Icons.search,
-                                      size: 48, color: Colors.black38),
+                                  const Icon(
+                                    Icons.search,
+                                    size: 48,
+                                    color: Colors.black38,
+                                  ),
                                   const SizedBox(height: 12),
                                   const Text(
                                     'Start typing to search products',
                                     style: TextStyle(
-                                        fontSize: 16, color: Colors.black54),
+                                      fontSize: 16,
+                                      color: Colors.black54,
+                                    ),
                                   ),
                                 ] else ...[
                                   const _EmptyCollection(),
@@ -119,33 +126,30 @@ class CollectionView extends GetView<CollectionController> {
                         )
                       else
                         SliverPadding(
-                          padding:
-                          const EdgeInsets.fromLTRB(16, 8, 16, 12),
+                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
                           sliver: SliverGrid(
-                            delegate: SliverChildBuilderDelegate(
-                                  (ctx, i) {
-                                final item = c.items[i];
-                                return ProductCard<CollectionItem>(
-                                  item: item,
-                                  title: item.title,
-                                  image: item.image,
-                                  price: item.price,
-                                  offerPrice: null,
-                                  expiryBadges: const [],
-                                  onOpen: c.openItem,
-                                  onAdd: c.addToCollection,
-                                  brandColor: _blue,
-                                );
-                              },
-                              childCount: c.items.length,
-                            ),
+                            delegate: SliverChildBuilderDelegate((ctx, i) {
+                              final item = c.items[i];
+                              return ProductCard<CollectionItem>(
+                                item: item,
+                                title: item.title,
+                                image: item.image,
+                                price: item.price,
+                                offerPrice: null,
+                                expiryBadges: const [],
+                                onOpen: c.openItem,
+                                onBookmark: c.addToCollection,
+                                onAddToCart: c.addToCollection,
+                                brandColor: _blue,
+                              );
+                            }, childCount: c.items.length),
                             gridDelegate:
-                            const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 2,
-                              mainAxisSpacing: 16,
-                              crossAxisSpacing: 16,
-                              childAspectRatio: 0.88,
-                            ),
+                                const SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: 2,
+                                  mainAxisSpacing: 16,
+                                  crossAxisSpacing: 16,
+                                  childAspectRatio: 0.88,
+                                ),
                           ),
                         ),
                       SliverToBoxAdapter(
@@ -154,15 +158,15 @@ class CollectionView extends GetView<CollectionController> {
                           child: Center(
                             child: loadingMore
                                 ? const Padding(
-                              padding:
-                              EdgeInsets.symmetric(vertical: 12),
-                              child: SizedBox(
-                                height: 24,
-                                width: 24,
-                                child: CircularProgressIndicator(
-                                    strokeWidth: 2),
-                              ),
-                            )
+                                    padding: EdgeInsets.symmetric(vertical: 12),
+                                    child: SizedBox(
+                                      height: 24,
+                                      width: 24,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                      ),
+                                    ),
+                                  )
                                 : const SizedBox.shrink(),
                           ),
                         ),
@@ -177,7 +181,6 @@ class CollectionView extends GetView<CollectionController> {
       );
     });
   }
-
 }
 
 /// Dedicated, local search field for CollectionView only.
@@ -220,7 +223,9 @@ class _CollectionSearchField extends StatelessWidget {
           hintText: hintText,
           hintStyle: const TextStyle(color: Colors.black54, fontSize: 14),
           isDense: true,
-          contentPadding: const EdgeInsets.symmetric(vertical: 0), // ✅ no extra height
+          contentPadding: const EdgeInsets.symmetric(
+            vertical: 0,
+          ), // ✅ no extra height
           border: border,
           enabledBorder: border,
           focusedBorder: border,
@@ -231,7 +236,11 @@ class _CollectionSearchField extends StatelessWidget {
               if (value.text.isEmpty) return const SizedBox.shrink();
               return IconButton(
                 padding: EdgeInsets.zero,
-                icon: const Icon(Icons.close_rounded, size: 18, color: Colors.black54),
+                icon: const Icon(
+                  Icons.close_rounded,
+                  size: 18,
+                  color: Colors.black54,
+                ),
                 onPressed: () {
                   controller.clear();
                   onChanged?.call('');
@@ -246,8 +255,6 @@ class _CollectionSearchField extends StatelessWidget {
     );
   }
 }
-
-
 
 class _EmptyCollection extends StatelessWidget {
   const _EmptyCollection();
@@ -300,7 +307,6 @@ class _ErrorState extends StatelessWidget {
   }
 }
 
-
 class _ToolbarBackButton extends StatelessWidget {
   const _ToolbarBackButton({required this.onPressed});
   final VoidCallback onPressed;
@@ -315,7 +321,7 @@ class _ToolbarBackButton extends StatelessWidget {
         onTap: onPressed,
         child: const SizedBox(
           height: 46, // matches search height
-          width: 46,  // square pill button
+          width: 46, // square pill button
           child: Center(
             child: Icon(
               Icons.arrow_back_ios_new_rounded,

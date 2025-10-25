@@ -1,4 +1,4 @@
-
+import 'package:dealzy/combine_service/add_to_cart_service.dart';
 import 'package:dealzy/product_details/product_service.dart';
 import 'package:dealzy/product_details/report_service.dart'; // <-- keep this
 import 'package:flutter/material.dart';
@@ -80,25 +80,30 @@ class ProductDetailsController extends GetxController {
     ProductService? service,
     String? productId,
     BookmarkService? bookmarkService,
-    ReportService? reportService,                 // <-- allow DI (optional)
-  })  : _service = service ?? ProductService(),
-        _bookmark = bookmarkService ?? BookmarkService(),
-        _reportService = reportService ?? ReportService(), // <-- init here
-        _productId = productId ??
-            (Get.parameters['id'] ??
-                Get.parameters['product_id'] ??
-                (() {
-                  final a = Get.arguments;
-                  if (a is Map && a['product_id'] != null) return a['product_id'].toString();
-                  if (a != null) return a.toString();
-                  return '';
-                })());
+    AddToCartService? addToCartService,
+    ReportService? reportService, // <-- allow DI (optional)
+  }) : _service = service ?? ProductService(),
+       _bookmark = bookmarkService ?? BookmarkService(),
+       _addToCart = addToCartService ?? AddToCartService(),
+       _reportService = reportService ?? ReportService(), // <-- init here
+       _productId =
+           productId ??
+           (Get.parameters['id'] ??
+               Get.parameters['product_id'] ??
+               (() {
+                 final a = Get.arguments;
+                 if (a is Map && a['product_id'] != null)
+                   return a['product_id'].toString();
+                 if (a != null) return a.toString();
+                 return '';
+               })());
 
   static const blue = Color(0xFF124A89);
 
   final ProductService _service;
   final BookmarkService _bookmark;
-  final ReportService _reportService;            // <-- field
+  final AddToCartService _addToCart;
+  final ReportService _reportService; // <-- field
   final String _productId;
 
   // state
@@ -126,8 +131,6 @@ class ProductDetailsController extends GetxController {
   // cart state
   final isAddingToCart = false.obs;
 
-
-
   void toggleDesc() => descExpanded.toggle();
   void toggleFirstReview() => firstReviewExpanded.toggle();
 
@@ -139,27 +142,41 @@ class ProductDetailsController extends GetxController {
       isAddingToCart.value = true;
 
       // 🔹 Optional: check login
-      final token = await TokenStorage.getToken();
-      if (token == null || token.isEmpty) {
-        Get.dialog(const LoginRequiredDialog(), barrierDismissible: false);
-        return;
-      }
+      // final token = await TokenStorage.getToken();
+      // if (token == null || token.isEmpty) {
+      //   Get.dialog(const LoginRequiredDialog(), barrierDismissible: false);
+      //   return;
+      // }
 
-      // 🔹 TODO: Call your actual add-to-cart service here
-      await Future.delayed(const Duration(milliseconds: 800)); // simulate network delay
+      final res = await _addToCart.addToCart(product.id);
 
       Get.snackbar(
         'Added to Cart',
-        '${product.title} was added successfully!',
+        res.message.isNotEmpty
+            ? res.message
+            : '${product.title} was added successfully!',
         snackPosition: SnackPosition.TOP,
         backgroundColor: Colors.green.shade600,
         colorText: Colors.white,
         margin: const EdgeInsets.all(12),
         duration: const Duration(seconds: 2),
       );
+    } on StateError catch (e) {
+      if (e.message.contains('Missing token')) {
+        Get.dialog(const LoginRequiredDialog(), barrierDismissible: false);
+      } else {
+        Get.snackbar(
+          'Error',
+          e.message,
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.orange.shade700,
+          colorText: Colors.white,
+          margin: const EdgeInsets.all(12),
+        );
+      }
     } catch (e) {
       Get.snackbar(
-        'Error',
+        'Add to cart failed',
         e.toString(),
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.red.shade700,
@@ -170,7 +187,6 @@ class ProductDetailsController extends GetxController {
       isAddingToCart.value = false;
     }
   }
-
 
   Future<void> onBookmark() async {
     if (isBookmarking.value) return;
@@ -252,7 +268,7 @@ class ProductDetailsController extends GetxController {
           'Thanks. We’ll review within 24 hours and take appropriate action.',
           snackPosition: SnackPosition.TOP,
           backgroundColor: Colors.green.shade600, // ✅ green background
-          colorText: Colors.white,                // white text
+          colorText: Colors.white, // white text
           margin: const EdgeInsets.all(12),
           duration: const Duration(seconds: 3),
         );
@@ -261,7 +277,7 @@ class ProductDetailsController extends GetxController {
           'Report failed',
           'Please try again in a moment.',
           snackPosition: SnackPosition.TOP,
-          backgroundColor: Colors.red.shade700,   // red background for failure
+          backgroundColor: Colors.red.shade700, // red background for failure
           colorText: Colors.white,
           margin: const EdgeInsets.all(12),
         );
@@ -284,7 +300,8 @@ class ProductDetailsController extends GetxController {
     final open = _parseToday(store.openTime);
     final close = _parseToday(store.closeTime);
     if (close.isBefore(open)) {
-      return now.isAfter(open) || now.isBefore(close.add(const Duration(days: 1)));
+      return now.isAfter(open) ||
+          now.isBefore(close.add(const Duration(days: 1)));
     }
     return now.isAfter(open) && now.isBefore(close);
   }
@@ -349,7 +366,6 @@ class ProductDetailsController extends GetxController {
     }
   }
 
-
   // inside ProductDetailsController
 
   void goToStoreDetails() {
@@ -369,7 +385,6 @@ class ProductDetailsController extends GetxController {
       },
     );
   }
-
 
   @override
   void onClose() {
@@ -392,6 +407,4 @@ class ProductDetailsController extends GetxController {
     final ampm = dt.hour >= 12 ? 'pm' : 'am';
     return '$h:$m $ampm';
   }
-
-
 }

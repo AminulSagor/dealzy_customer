@@ -8,8 +8,6 @@ import 'store_details_controller.dart';
 class StoreDetailsView extends GetView<StoreDetailsController> {
   const StoreDetailsView({super.key});
 
-
-
   @override
   Widget build(BuildContext context) {
     final c = controller;
@@ -21,7 +19,10 @@ class StoreDetailsView extends GetView<StoreDetailsController> {
         elevation: 0.5,
         leadingWidth: 64,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.black87),
+          icon: const Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: Colors.black87,
+          ),
           onPressed: c.back,
           tooltip: 'Back',
         ),
@@ -29,29 +30,31 @@ class StoreDetailsView extends GetView<StoreDetailsController> {
 
         // 👇 new part
         actions: [
-          Obx(() => TextButton.icon(
-            onPressed: c.isBlocking.value ? null : c.onBlockSeller,
-            icon: c.isBlocking.value
-                ? const SizedBox(
-                width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
-                : const Icon(Icons.block, color: Colors.redAccent, size: 20),
-            label: const Text(
-              'Block',
-              style: TextStyle(
-                color: Colors.redAccent,
-                fontWeight: FontWeight.w600,
+          Obx(
+            () => TextButton.icon(
+              onPressed: c.isBlocking.value ? null : c.onBlockSeller,
+              icon: c.isBlocking.value
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.block, color: Colors.redAccent, size: 20),
+              label: const Text(
+                'Block',
+                style: TextStyle(
+                  color: Colors.redAccent,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.redAccent,
+                padding: const EdgeInsets.symmetric(horizontal: 12),
               ),
             ),
-            style: TextButton.styleFrom(
-              foregroundColor: Colors.redAccent,
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-            ),
-          )),
+          ),
         ],
-
       ),
-
-
 
       body: Stack(
         children: [
@@ -107,8 +110,7 @@ class _Header extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-
-        SizedBox(width: 30.w,),
+        SizedBox(width: 30.w),
         // avatar
         CircleAvatar(
           radius: 34,
@@ -116,13 +118,18 @@ class _Header extends StatelessWidget {
           child: (c.store.avatarUrl.isEmpty)
               ? const Icon(Icons.store, color: Colors.black38, size: 28)
               : ClipOval(
-            child: Image.network(
-              c.store.avatarUrl,
-              width: 68, height: 68, fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) =>
-              const Icon(Icons.store, color: Colors.black38, size: 28),
-            ),
-          ),
+                  child: Image.network(
+                    c.store.avatarUrl,
+                    width: 68,
+                    height: 68,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => const Icon(
+                      Icons.store,
+                      color: Colors.black38,
+                      size: 28,
+                    ),
+                  ),
+                ),
         ),
         const SizedBox(width: 12),
 
@@ -156,8 +163,6 @@ class _Header extends StatelessWidget {
   }
 }
 
-
-
 class _InfoList extends StatelessWidget {
   const _InfoList({required this.controller});
   final StoreDetailsController controller;
@@ -182,8 +187,10 @@ class _InfoList extends StatelessWidget {
               child: Wrap(
                 crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
-                  Text('${c.openLabel12h} ',
-                      style: const TextStyle(fontSize: 14, color: Colors.black87)),
+                  Text(
+                    '${c.openLabel12h} ',
+                    style: const TextStyle(fontSize: 14, color: Colors.black87),
+                  ),
                   Text(
                     c.isOpenNow ? '(open) ' : '(close) ',
                     style: TextStyle(
@@ -192,11 +199,22 @@ class _InfoList extends StatelessWidget {
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                  const Text('to ', style: TextStyle(fontSize: 14, color: Colors.black87)),
-                  Text(c.closeLabel12h,
-                      style: const TextStyle(fontSize: 14, color: Colors.black87)),
-                  const Text(' (close)',
-                      style: TextStyle(fontSize: 14, color: Colors.red, fontWeight: FontWeight.w600)),
+                  const Text(
+                    'to ',
+                    style: TextStyle(fontSize: 14, color: Colors.black87),
+                  ),
+                  Text(
+                    c.closeLabel12h,
+                    style: const TextStyle(fontSize: 14, color: Colors.black87),
+                  ),
+                  const Text(
+                    ' (close)',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.red,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -219,7 +237,10 @@ class _InfoRow extends StatelessWidget {
         Icon(icon, size: 20, color: Colors.black87),
         const SizedBox(width: 10),
         Expanded(
-          child: Text(text, style: const TextStyle(fontSize: 14, color: Colors.black87)),
+          child: Text(
+            text,
+            style: const TextStyle(fontSize: 14, color: Colors.black87),
+          ),
         ),
       ],
     );
@@ -265,30 +286,32 @@ class _BottomSheetShell extends StatelessWidget {
             onTap: c.togglePanel,
             child: Padding(
               padding: const EdgeInsets.symmetric(vertical: 6.0),
-              child: Obx(() => Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    c.isExpanded.value ? 'Less' : 'View',
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
+              child: Obx(
+                () => Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      c.isExpanded.value ? 'Less' : 'View',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Icon(
+                      c.isExpanded.value
+                          ? Icons.keyboard_arrow_up
+                          : Icons.keyboard_arrow_down,
+                      size: 18,
                       color: Colors.black87,
                     ),
-                  ),
-                  const SizedBox(width: 6),
-                  Icon(
-                    c.isExpanded.value
-                        ? Icons.keyboard_arrow_up
-                        : Icons.keyboard_arrow_down,
-                    size: 18,
-                    color: Colors.black87,
-                  ),
-                ],
-              )),
+                  ],
+                ),
+              ),
             ),
           ),
-          SizedBox(height: 8.h,),
+          SizedBox(height: 8.h),
 
           Expanded(
             child: Obx(() {
@@ -316,9 +339,19 @@ class _BottomSheetShell extends StatelessWidget {
                   return false;
                 },
                 child: GridView.builder(
-                  controller: scrollController, // driven by the DraggableScrollableSheet
-                  padding: EdgeInsets.fromLTRB(16, 8, 16, bottom > 0 ? bottom : 12),
-                  itemCount: items.length + (c.isLoadingMore.value ? 2 : 0), // space for shimmer/loaders
+                  controller:
+                      scrollController, // driven by the DraggableScrollableSheet
+                  padding: EdgeInsets.fromLTRB(
+                    16,
+                    8,
+                    16,
+                    bottom > 0 ? bottom : 12,
+                  ),
+                  itemCount:
+                      items.length +
+                      (c.isLoadingMore.value
+                          ? 2
+                          : 0), // space for shimmer/loaders
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 2,
                     crossAxisSpacing: 14,
@@ -341,16 +374,18 @@ class _BottomSheetShell extends StatelessWidget {
                       onOpen: (prod) {
                         // e.g. navigate to details
                       },
-                      onAdd: (prod) => c.onAdd(prod),   // <-- this now calls BookmarkService
+                      onBookmark: (prod) =>
+                          c.onAdd(prod), // <-- this now calls BookmarkService
+                      onAddToCart: (prod) {
+                        // TODO
+                      },
                       brandColor: StoreDetailsController.blue,
                     );
-
                   },
                 ),
               );
             }),
           ),
-
         ],
       ),
     );
@@ -391,9 +426,7 @@ class _ProductCardInSheet extends StatelessWidget {
         child: Stack(
           children: [
             // product image
-            Positioned.fill(
-              child: Image.network(image, fit: BoxFit.cover),
-            ),
+            Positioned.fill(child: Image.network(image, fit: BoxFit.cover)),
 
             // solid bottom bar for text + button
             Positioned(
@@ -401,7 +434,9 @@ class _ProductCardInSheet extends StatelessWidget {
               right: 0,
               bottom: 0,
               child: Container(
-                color: StoreDetailsController.blue.withOpacity(0.65), // solid bar
+                color: StoreDetailsController.blue.withOpacity(
+                  0.65,
+                ), // solid bar
                 padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
                 child: Row(
                   children: [
@@ -456,4 +491,3 @@ class _ProductCardInSheet extends StatelessWidget {
     );
   }
 }
-

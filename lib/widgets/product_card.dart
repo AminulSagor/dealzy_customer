@@ -11,7 +11,8 @@ class ProductCard<T> extends StatelessWidget {
     this.offerPrice,
     this.expiryBadges = const [],
     required this.onOpen,
-    required this.onAdd,
+    required this.onBookmark,
+    required this.onAddToCart,
     this.expiringStyle = false,
     this.brandColor = const Color(0xFF124A89),
   });
@@ -23,7 +24,8 @@ class ProductCard<T> extends StatelessWidget {
   final double? offerPrice;
   final List<String> expiryBadges;
   final void Function(T) onOpen;
-  final void Function(T) onAdd;
+  final void Function(T) onBookmark;
+  final void Function(T) onAddToCart;
   final bool expiringStyle;
   final Color brandColor;
 
@@ -107,7 +109,7 @@ class ProductCard<T> extends StatelessWidget {
                 right: 8,
                 child: InkWell(
                   customBorder: const CircleBorder(),
-                  onTap: () => onAdd(item),
+                  onTap: () => onBookmark(item),
                   child: SizedBox(
                     width: 34,
                     height: 34,
@@ -144,42 +146,20 @@ class ProductCard<T> extends StatelessWidget {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.end,
                     children: [
-                      Row(
-                        children: [
-                          Text(
-                            title.length > 13 ? '${title.substring(0, 14)}...' : title,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis, // still keeps layout safe
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w600,
-                              fontSize: 13,
-                            ),
-                          ),
-
-                          const Spacer(),
-                          Transform.translate(
-                            offset: const Offset(0, 16),
-                            child: Material(
-                              color: Colors.white,
-                              shape: const CircleBorder(),
-                              elevation: 2,
-                              shadowColor: Colors.black26,
-                              child: SizedBox(
-                                width: 28,
-                                height: 28,
-                                child: Padding(
-                                  padding: const EdgeInsets.all(6),
-                                  child: Image.asset(
-                                    'assets/png/add_to_cart.png',
-                                    fit: BoxFit.contain,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
+                      Text(
+                        title.length > 13
+                            ? '${title.substring(0, 14)}...'
+                            : title,
+                        maxLines: 1,
+                        overflow:
+                            TextOverflow.ellipsis, // still keeps layout safe
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
+                        ),
                       ),
                       const SizedBox(height: 2),
                       Row(
@@ -204,8 +184,28 @@ class ProductCard<T> extends StatelessWidget {
                                 fontWeight: FontWeight.w700,
                               ),
                             ),
-
                           ],
+                          Spacer(),
+                          GestureDetector(
+                            onTap: () => onAddToCart(item),
+                            child: Material(
+                              color: Colors.white,
+                              shape: const CircleBorder(),
+                              elevation: 2,
+                              shadowColor: Colors.black26,
+                              child: SizedBox(
+                                width: 28,
+                                height: 28,
+                                child: Padding(
+                                  padding: const EdgeInsets.all(6),
+                                  child: Image.asset(
+                                    'assets/png/add_to_cart.png',
+                                    fit: BoxFit.contain,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
                         ],
                       ),
                     ],

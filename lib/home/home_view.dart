@@ -30,12 +30,13 @@ class HomeView extends GetView<HomeController> {
                 controller: c.searchCtrl,
                 hintText: 'Search area or store',
                 onTap: () {
-                  Get.toNamed(AppRoutes.collection, arguments: {'fromHome': true});
+                  Get.toNamed(
+                    AppRoutes.collection,
+                    arguments: {'fromHome': true},
+                  );
                 },
               ),
             ),
-
-
 
             const SliverToBoxAdapter(
               child: Padding(
@@ -65,7 +66,8 @@ class HomeView extends GetView<HomeController> {
                     onRetry: c.refreshRegular,
                     items: items,
                     onOpen: c.onOpen,
-                    onAdd: c.onBookmark,
+                    onBookmark: c.onBookmark,
+                    onAddToCart: c.onAddToCart,
                     expiringStyle: false,
                   ),
                 );
@@ -89,7 +91,8 @@ class HomeView extends GetView<HomeController> {
                     onRetry: c.refreshExpiring,
                     items: items,
                     onOpen: c.onOpen,
-                    onAdd: c.onBookmark,
+                    onBookmark: c.onBookmark,
+                    onAddToCart: c.onAddToCart,
                     expiringStyle: true,
                   ),
                 );
@@ -113,7 +116,8 @@ class HomeView extends GetView<HomeController> {
                     onRetry: c.refreshClearance,
                     items: items,
                     onOpen: c.onOpen,
-                    onAdd: c.onBookmark,
+                    onBookmark: c.onBookmark,
+                    onAddToCart: c.onAddToCart,
                     expiringStyle: false,
                   ),
                 );
@@ -137,14 +141,15 @@ class HomeView extends GetView<HomeController> {
                     onRetry: c.refreshSeasonal,
                     items: items,
                     onOpen: c.onOpen,
-                    onAdd: c.onBookmark,
+                    onBookmark: c.onBookmark,
+                    onAddToCart: c.onAddToCart,
                     expiringStyle: true, // ← same style as Expiring
                   ),
                 );
               }),
             ),
 
-// Service Special Offer (design like Regular/Clearance → expiringStyle: false)
+            // Service Special Offer (design like Regular/Clearance → expiringStyle: false)
             SliverToBoxAdapter(
               child: Obx(() {
                 final isLoading = c.isLoadingServiceSpecial.value;
@@ -161,13 +166,13 @@ class HomeView extends GetView<HomeController> {
                     onRetry: c.refreshServiceSpecial,
                     items: items,
                     onOpen: c.onOpen,
-                    onAdd: c.onBookmark,
+                    onBookmark: c.onBookmark,
+                    onAddToCart: c.onAddToCart,
                     expiringStyle: false, // ← like Regular/Clearance
                   ),
                 );
               }),
             ),
-
 
             const SliverToBoxAdapter(child: SizedBox(height: 96)),
           ],
@@ -216,19 +221,27 @@ class _Header extends StatelessWidget {
                   future: TokenStorage.getToken(),
                   builder: (context, snap) {
                     if (snap.connectionState == ConnectionState.waiting) {
-                      return const SizedBox(height: 36, child: Align(alignment: Alignment.centerRight, child: Text("Loading...")));
+                      return const SizedBox(
+                        height: 36,
+                        child: Align(
+                          alignment: Alignment.centerRight,
+                          child: Text("Loading..."),
+                        ),
+                      );
                     }
-            
+
                     final token = snap.data;
                     final isLoggedIn = token != null && token.isNotEmpty;
-            
+
                     return Obx(() {
                       final name = c.username.value.trim();
-                      final displayName = isLoggedIn ? (name.isEmpty ? '...' : name) : 'Guest';
-            
-                      final headerLocation = c.location.value.trim(); // e.g. "Westminster,SW1A1AA"
-            
-            
+                      final displayName = isLoggedIn
+                          ? (name.isEmpty ? '...' : name)
+                          : 'Guest';
+
+                      final headerLocation = c.location.value
+                          .trim(); // e.g. "Westminster,SW1A1AA"
+
                       return Column(
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
@@ -249,16 +262,18 @@ class _Header extends StatelessWidget {
                                   ),
                                 ),
                               ),
-            
                             ],
                           ),
-            
+
                           //const SizedBox(height: 6),
-            
+
                           // Second row: location chip OR sign-in pill
                           if (isLoggedIn && headerLocation.isNotEmpty)
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 6,
+                              ),
                               decoration: BoxDecoration(
                                 color: const Color(0xFFF3F5F7),
                                 borderRadius: BorderRadius.circular(20),
@@ -266,13 +281,21 @@ class _Header extends StatelessWidget {
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  const Icon(Icons.location_on_rounded, size: 16, color: HomeController.blue),
+                                  const Icon(
+                                    Icons.location_on_rounded,
+                                    size: 16,
+                                    color: HomeController.blue,
+                                  ),
                                   const SizedBox(width: 6),
                                   Text(
                                     headerLocation,
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(color: Colors.black87, fontSize: 12, fontWeight: FontWeight.w600),
+                                    style: const TextStyle(
+                                      color: Colors.black87,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                    ),
                                   ),
                                 ],
                               ),
@@ -285,11 +308,18 @@ class _Header extends StatelessWidget {
                                 onTap: () => Get.toNamed(AppRoutes.signIn),
                                 customBorder: const StadiumBorder(),
                                 child: const Padding(
-                                  padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 6,
+                                  ),
                                   child: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      Icon(Icons.login, size: 14, color: Colors.white),
+                                      Icon(
+                                        Icons.login,
+                                        size: 14,
+                                        color: Colors.white,
+                                      ),
                                       SizedBox(width: 6),
                                       Text(
                                         'Sign in',
@@ -313,13 +343,11 @@ class _Header extends StatelessWidget {
               ],
             ),
           ),
-
         ],
       ),
     );
   }
 }
-
 
 // ------------- Search (filter inside the bar) -------------
 
@@ -474,7 +502,6 @@ class _CategoriesStrip extends StatelessWidget {
   }
 }
 
-
 class _SkeletonTile extends StatelessWidget {
   const _SkeletonTile();
 
@@ -553,7 +580,12 @@ class _BannerCarousel extends StatelessWidget {
 
         if (c.banners.isEmpty) {
           return Padding(
-            padding: const EdgeInsets.fromLTRB(HomeView._pad, 4, HomeView._pad, 12),
+            padding: const EdgeInsets.fromLTRB(
+              HomeView._pad,
+              4,
+              HomeView._pad,
+              12,
+            ),
             child: AspectRatio(
               aspectRatio: 16 / 9,
               child: DecoratedBox(
@@ -561,14 +593,11 @@ class _BannerCarousel extends StatelessWidget {
                   color: const Color(0xFFF3F5F7),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Center(
-                  child: Text('No deals right now'),
-                ),
+                child: const Center(child: Text('No deals right now')),
               ),
             ),
           );
         }
-
 
         return Column(
           children: [
@@ -819,13 +848,15 @@ class _ProductsRow extends StatelessWidget {
   const _ProductsRow({
     required this.items,
     required this.onOpen,
-    required this.onAdd,
+    required this.onBookmark,
+    required this.onAddToCart,
     this.expiringStyle = false,
   });
 
   final List<ProductItems> items;
   final void Function(ProductItems) onOpen;
-  final void Function(ProductItems) onAdd;
+  final void Function(ProductItems) onBookmark;
+  final void Function(ProductItems) onAddToCart;
   final bool expiringStyle;
 
   @override
@@ -849,7 +880,8 @@ class _ProductsRow extends StatelessWidget {
               offerPrice: p.offerPrice,
               expiryBadges: p.expiryBadges ?? const [],
               onOpen: (it) => onOpen(it),
-              onAdd:  (it) => onAdd(it),
+              onBookmark: (it) => onBookmark(it),
+              onAddToCart: (it) => onAddToCart(it),
               expiringStyle: expiringStyle,
               brandColor: HomeController.blue,
             ),
@@ -862,14 +894,14 @@ class _ProductsRow extends StatelessWidget {
 
 // ------------- Product card -------------
 
-
 Widget _sectionBody({
   required bool isLoading,
   required String? error,
   required VoidCallback onRetry,
   required List<ProductItems> items,
   required void Function(ProductItems) onOpen,
-  required void Function(ProductItems) onAdd,
+  required void Function(ProductItems) onBookmark,
+  required void Function(ProductItems) onAddToCart,
   required bool expiringStyle,
 }) {
   if (isLoading) {
@@ -918,7 +950,8 @@ Widget _sectionBody({
   return _ProductsRow(
     items: items,
     onOpen: onOpen,
-    onAdd: onAdd,
+    onBookmark: onBookmark,
+    onAddToCart: onAddToCart,
     expiringStyle: expiringStyle,
   );
 }

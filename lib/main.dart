@@ -22,9 +22,7 @@ Future<void> main() async {
     await FirstLaunchStorage.setLaunched();
   }
 
-  runApp(MyApp(
-    initialRoute: isFirst ? AppRoutes.welcome : AppRoutes.home,
-  ));
+  runApp(MyApp(initialRoute: isFirst ? AppRoutes.home : AppRoutes.home));
 }
 
 class MyApp extends StatelessWidget {

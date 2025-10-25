@@ -1,5 +1,5 @@
-
 import 'dart:async';
+import 'package:dealzy/combine_service/add_to_cart_service.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../combine_model/product_model.dart';
@@ -12,11 +12,7 @@ import '../user_profile/user_profile_service.dart'; // <-- reuse the existing se
 
 // ----------------- UI Models -----------------
 class CategoryItem {
-  CategoryItem({
-    required this.id,
-    required this.name,
-    required this.image,
-  });
+  CategoryItem({required this.id, required this.name, required this.image});
 
   final String id;
   final String name;
@@ -24,11 +20,7 @@ class CategoryItem {
 }
 
 class BannerItem {
-  BannerItem({
-    required this.image,
-    this.title,
-    this.subtitle,
-  });
+  BannerItem({required this.image, this.title, this.subtitle});
   final String image;
   final String? title;
   final String? subtitle;
@@ -37,8 +29,8 @@ class BannerItem {
 // ----------------- Controller -----------------
 class HomeController extends GetxController {
   HomeController({HomeService? service, UserProfileService? profileService})
-      : _service = service ?? HomeService(),
-        _profileService = profileService ?? UserProfileService();
+    : _service = service ?? HomeService(),
+      _profileService = profileService ?? UserProfileService();
 
   static const blue = Color(0xFF124A89);
 
@@ -46,6 +38,7 @@ class HomeController extends GetxController {
   final HomeService _service;
   final UserProfileService _profileService;
   final BookmarkService _bookmarkService = BookmarkService();
+  final AddToCartService _addToCartService = AddToCartService();
 
   final username = ''.obs;
   final location = ''.obs;
@@ -130,7 +123,11 @@ class HomeController extends GetxController {
     _autoTimer = Timer.periodic(autoInterval, (_) {
       if (_userDragging || !_canSlide) return;
       final next = (currentBanner.value + 1) % banners.length;
-      bannerCtrl.animateToPage(next, duration: autoAnimDuration, curve: autoCurve);
+      bannerCtrl.animateToPage(
+        next,
+        duration: autoAnimDuration,
+        curve: autoCurve,
+      );
     });
   }
 
@@ -142,10 +139,14 @@ class HomeController extends GetxController {
   void _startAutoWhenAttached() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_canSlide) {
-        final safeIndex = (currentBanner.value >= banners.length) ? 0 : currentBanner.value;
+        final safeIndex = (currentBanner.value >= banners.length)
+            ? 0
+            : currentBanner.value;
         if (safeIndex != currentBanner.value) currentBanner.value = 0;
         if (bannerCtrl.hasClients) {
-          try { bannerCtrl.jumpToPage(safeIndex); } catch (_) {}
+          try {
+            bannerCtrl.jumpToPage(safeIndex);
+          } catch (_) {}
         }
         startAutoPlay();
       } else {
@@ -172,8 +173,11 @@ class HomeController extends GetxController {
   final navIndex = 0.obs;
 
   // actions
-  void onTapFilter() =>
-      Get.snackbar('Filter', 'Open filters…', snackPosition: SnackPosition.BOTTOM);
+  void onTapFilter() => Get.snackbar(
+    'Filter',
+    'Open filters…',
+    snackPosition: SnackPosition.BOTTOM,
+  );
 
   void onTapSeeAll(String section) {
     // map UI section to API offer key
@@ -188,7 +192,7 @@ class HomeController extends GetxController {
       case 'clearance offer':
         offer = 'clearance';
         break;
-    // NEW:
+      // NEW:
       case 'seasonal offer':
         offer = 'seasonal';
         break;
@@ -198,16 +202,19 @@ class HomeController extends GetxController {
     }
 
     if (offer == null) {
-      Get.snackbar('See All', 'Unknown section "$section"',
-          snackPosition: SnackPosition.BOTTOM);
+      Get.snackbar(
+        'See All',
+        'Unknown section "$section"',
+        snackPosition: SnackPosition.BOTTOM,
+      );
       return;
     }
 
     Get.toNamed(
       AppRoutes.collection,
       arguments: {
-        'offer': offer,             // <- important
-        'title': section,           // nice-to-have for app bar
+        'offer': offer, // <- important
+        'title': section, // nice-to-have for app bar
         'fromHome': false,
       },
     );
@@ -237,18 +244,67 @@ class HomeController extends GetxController {
       if (e.message.contains('Missing token')) {
         Get.dialog(const LoginRequiredDialog(), barrierDismissible: false);
       } else {
-        Get.snackbar('Error', e.message,
-            snackPosition: SnackPosition.BOTTOM,
-            backgroundColor: const Color(0xFFEF6C00),
-            colorText: Colors.white,
-            margin: const EdgeInsets.all(12));
+        Get.snackbar(
+          'Error',
+          e.message,
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: const Color(0xFFEF6C00),
+          colorText: Colors.white,
+          margin: const EdgeInsets.all(12),
+        );
       }
     } catch (e) {
-      Get.snackbar('Bookmark failed', e.toString(),
+      Get.snackbar(
+        'Bookmark failed',
+        e.toString(),
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: const Color(0xFFD32F2F),
+        colorText: Colors.white,
+        margin: const EdgeInsets.all(12),
+      );
+    } finally {
+      _bookmarking.remove(id);
+    }
+  }
+
+  Future<void> onAddToCart(ProductItems item) async {
+    final id = item.id.toString();
+    if (_bookmarking.contains(id)) return;
+    _bookmarking.add(id);
+
+    try {
+      final res = await _addToCartService.addToCart(id);
+      Get.snackbar(
+        'Saved',
+        res.message.isNotEmpty ? res.message : 'Bookmarked "${item.title}"',
+        snackPosition: SnackPosition.TOP,
+        backgroundColor: const Color(0xFF2E7D32),
+        colorText: Colors.white,
+        margin: const EdgeInsets.all(12),
+        duration: const Duration(seconds: 2),
+      );
+    } on StateError catch (e) {
+      if (e.message.contains('Missing token')) {
+        Get.dialog(const LoginRequiredDialog(), barrierDismissible: false);
+      } else {
+        Get.snackbar(
+          'Error',
+          e.message,
           snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: const Color(0xFFD32F2F),
+          backgroundColor: const Color(0xFFEF6C00),
           colorText: Colors.white,
-          margin: const EdgeInsets.all(12));
+          margin: const EdgeInsets.all(12),
+        );
+      }
+    } catch (e) {
+      Get.snackbar(
+        'Bookmark failed',
+        e.toString(),
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: const Color(0xFFD32F2F),
+        colorText: Colors.white,
+        margin: const EdgeInsets.all(12),
+      );
     } finally {
       _bookmarking.remove(id);
     }
@@ -323,11 +379,13 @@ class HomeController extends GetxController {
     try {
       final apiCats = await _service.getAllCategories();
       categories.assignAll(
-        apiCats.map((c) => CategoryItem(
-          id: c.id.toString(),
-          name: c.category,
-          image: c.imgPath,
-        )),
+        apiCats.map(
+          (c) => CategoryItem(
+            id: c.id.toString(),
+            name: c.category,
+            image: c.imgPath,
+          ),
+        ),
       );
     } catch (e) {
       categoriesError.value = e.toString();
@@ -353,7 +411,9 @@ class HomeController extends GetxController {
       currentBanner.value = 0;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (bannerCtrl.hasClients && banners.isNotEmpty) {
-          try { bannerCtrl.jumpToPage(0); } catch (_) {}
+          try {
+            bannerCtrl.jumpToPage(0);
+          } catch (_) {}
         }
         _startAutoWhenAttached();
       });
@@ -450,7 +510,9 @@ class HomeController extends GetxController {
         limit: _limit,
       );
       final items = res.products
-          .map((p) => _mapDtoToProduct(p, expiring: true)) // ← reuse expiring badge logic
+          .map(
+            (p) => _mapDtoToProduct(p, expiring: true),
+          ) // ← reuse expiring badge logic
           .toList();
 
       if (resetPage) {
@@ -515,8 +577,6 @@ class HomeController extends GetxController {
       expiryBadges: badges,
     );
   }
-
-
 
   @override
   void onClose() {
