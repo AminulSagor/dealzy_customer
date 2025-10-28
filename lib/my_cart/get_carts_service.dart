@@ -194,35 +194,24 @@ class GetCartsService {
     }
 
     /// 🔹 Fetch product colors and variants for each product
-    for (final item in parsed.carts) {
-      try {
-        // final colors = await getProductColors(item.productId);
-        // final variants = await getProductVariants(item.productId);
-        // print(colors);
+    // for (final item in parsed.carts) {
+    //   try {
+    //     final colors = await getProductColors(item.productId);
+    //     final variants = await getProductVariants(item.productId);
 
-        final colors = [
-          ProductColor(id: '33', color: 'black'),
-          ProductColor(id: '34', color: 'blue'),
-          ProductColor(id: '35', color: 'white'),
-        ];
-        final variants = [
-          ProductVariant(id: '27', variant: '128GB'),
-          ProductVariant(id: '28', variant: '256GB'),
-        ];
+    //     item.colors = colors;
+    //     item.variants = variants;
 
-        item.colors = colors;
-        item.variants = variants;
+    //     if (colors.isNotEmpty) item.selectedColor.value = colors.first;
+    //     if (variants.isNotEmpty) item.selectedVariant.value = variants.first;
 
-        if (colors.isNotEmpty) item.selectedColor.value = colors.first;
-        if (variants.isNotEmpty) item.selectedVariant.value = variants.first;
-
-        debugPrint(
-          '✅ ${item.productName} => ${colors.length} colors, ${variants.length} variants',
-        );
-      } catch (e) {
-        debugPrint('⚠️ Error fetching extras for ${item.productName}: $e');
-      }
-    }
+    //     debugPrint(
+    //       '✅ ${item.productName} => ${colors.length} colors, ${variants.length} variants',
+    //     );
+    //   } catch (e) {
+    //     debugPrint('⚠️ Error fetching extras for ${item.productName}: $e');
+    //   }
+    // }
 
     return parsed;
   }
@@ -244,6 +233,7 @@ class GetCartsService {
     if (res.statusCode != 200) throw Exception('Failed to load colors');
 
     final json = jsonDecode(res.body) as Map<String, dynamic>;
+    print(json);
     if (json['status']?.toString().toLowerCase() != 'success') return [];
 
     final list = (json['colors'] as List<dynamic>? ?? [])
@@ -270,6 +260,7 @@ class GetCartsService {
     if (res.statusCode != 200) throw Exception('Failed to load variants');
 
     final json = jsonDecode(res.body) as Map<String, dynamic>;
+    print(json);
     if (json['status']?.toString().toLowerCase() != 'success') return [];
 
     final list = (json['variants'] as List<dynamic>? ?? [])

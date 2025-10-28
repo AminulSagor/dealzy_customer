@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
+import 'get_customer_orders_service.dart';
 import 'order_list_controller.dart';
 
 class OrderListView extends GetView<OrderListController> {
@@ -8,13 +9,12 @@ class OrderListView extends GetView<OrderListController> {
 
   @override
   Widget build(BuildContext context) {
-    final args = Get.arguments as Map<String, dynamic>? ?? {};
-    final status = args['status'] ?? 'Orders';
+    final status = controller.status;
 
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          "$status Orders",
+          "${status.capitalizeFirst} Orders",
           style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w600),
         ),
         centerTitle: false,
@@ -30,24 +30,22 @@ class OrderListView extends GetView<OrderListController> {
           );
         }
 
-        if (controller.orders.isEmpty) {
-          return const Center(
-            child: Text("No orders found."),
-          );
+        if (controller.sellers.isEmpty) {
+          return const Center(child: Text("No orders found."));
         }
 
-        return ListView.separated(
+        return ListView.builder(
           controller: controller.scrollController,
           padding: EdgeInsets.all(16.w),
           itemCount:
-          controller.orders.length + (controller.isLoadingMore.value ? 1 : 0),
-          separatorBuilder: (_, __) => SizedBox(height: 12.h),
+              controller.sellers.length +
+              (controller.isLoadingMore.value ? 1 : 0),
           itemBuilder: (context, index) {
             if (controller.isLoadingMore.value &&
-                index == controller.orders.length) {
-              return const Center(
-                child: Padding(
-                  padding: EdgeInsets.all(12),
+                index == controller.sellers.length) {
+              return const Padding(
+                padding: EdgeInsets.all(12),
+                child: Center(
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
                     color: Color(0xFF124A89),
@@ -56,161 +54,312 @@ class OrderListView extends GetView<OrderListController> {
               );
             }
 
-            final o = controller.orders[index];
+            final seller = controller.sellers[index];
 
-            return Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12.r),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 6,
-                    offset: const Offset(0, 3),
-                  ),
-                ],
-              ),
-              child: Column(
-                children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Seller Header
+                Padding(
+                  padding: EdgeInsets.only(bottom: 8.h),
+                  child: Row(
                     children: [
-                      /// 📸 Image touching 3 corners (TopLeft, BottomLeft, BottomRight)
-                      ClipRRect(
-                        borderRadius: BorderRadius.only(
-                          topLeft: Radius.circular(12.r),
-                          bottomLeft: Radius.circular(12.r),
-                          bottomRight: Radius.circular(0), // sharp right edge
-                        ),
-                        child: Image.network(
-                          o.image,
-                          width: 100.w,
-                          height: 100.w,
-                          fit: BoxFit.cover,
-                        ),
+                      CircleAvatar(
+                        radius: 12.r,
+                        backgroundImage: NetworkImage(seller.profilePath),
                       ),
-                      SizedBox(width: 12.w),
-
-                      /// Info Section
+                      SizedBox(width: 8.w),
                       Expanded(
-                        child: Padding(
-                          padding: EdgeInsets.symmetric(vertical: 10.h),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                "Order Code: ${o.orderCode}",
-                                style: TextStyle(
-                                  fontSize: 13.5.sp,
-                                  fontWeight: FontWeight.w600,
-                                  color: const Color(0xFF124A89),
-                                ),
-                              ),
-                              //SizedBox(height: 4.h),
-                              Text(
-                                o.status,
-                                style: TextStyle(
-                                  fontSize: 12.5.sp,
-                                  fontWeight: FontWeight.w500,
-                                  color: Colors.grey.shade700,
-                                ),
-                              ),
-                              //SizedBox(height: 4.h),
-                              Text(
-                                "Amount: £${o.amount.toStringAsFixed(2)}",
-                                style: TextStyle(
-                                  fontSize: 13.sp,
-                                  fontWeight: FontWeight.w500,
-                                  color: Colors.black,
-                                ),
-                              ),
-                              SizedBox(height: 4.h),
-                              Text(
-                                "Date: ${o.date.day}/${o.date.month}/${o.date.year}",
-                                style: TextStyle(
-                                  fontSize: 12.sp,
-                                  color: Colors.grey.shade600,
-                                ),
-                              ),
-                            ],
+                        child: Text(
+                          seller.storeName,
+                          style: TextStyle(
+                            fontSize: 14.sp,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
                       ),
                     ],
                   ),
+                ),
 
-                  /// 🔹 Elegant Cancel Button Section
-                  if (o.canCancel && o.status != 'Delivered')
-                    Padding(
-                      padding:
-                      EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
-                      child: Align(
-                        alignment: Alignment.centerRight,
-                        child: OutlinedButton.icon(
-                          style: OutlinedButton.styleFrom(
-                            side: const BorderSide(color: Colors.redAccent),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(50.r),
+                // 🧾 Orders List under this seller
+                ...seller.orders.map(
+                  (order) => Container(
+                    margin: EdgeInsets.only(bottom: 16.h),
+                    padding: EdgeInsets.all(12.w),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12.r),
+                      border: Border.all(color: Colors.black12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 8,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Order Header with “Show Code”
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              "Order #${order.orderId}",
+                              style: TextStyle(
+                                fontSize: 14.sp,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.black87,
+                              ),
                             ),
-                            padding: EdgeInsets.symmetric(
-                                vertical: 6.h, horizontal: 10.w),
-                          ),
-                          icon: const Icon(Icons.cancel_outlined,
-                              color: Colors.redAccent, size: 18),
-                          label: Text(
-                            "Cancel Order",
-                            style: TextStyle(
-                              color: Colors.redAccent,
-                              fontSize: 12.5.sp,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          onPressed: () {
-                            Get.dialog(
-                              AlertDialog(
-                                shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12.r)),
-                                title: const Text("Cancel Order"),
-                                content: Text(
-                                  "Are you sure you want to cancel order ${o.orderCode}?",
-                                  style: TextStyle(fontSize: 13.5.sp),
-                                ),
-                                actions: [
-                                  TextButton(
-                                    onPressed: Get.back,
-                                    child: const Text("No"),
+                            if (order.status.toLowerCase() != 'pending')
+                              Obx(() {
+                                final isLoadingCode = controller.loadingCodes
+                                    .contains(order.orderId);
+                                final code =
+                                    controller.orderCodes[order.orderId];
+
+                                return TextButton.icon(
+                                  style: TextButton.styleFrom(
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: 8.w,
+                                      vertical: 2.h,
+                                    ),
+                                    backgroundColor: Colors.blue.shade700
+                                        .withAlpha(20),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8.r),
+                                    ),
                                   ),
-                                  ElevatedButton.icon(
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: Colors.redAccent,
+                                  icon: Icon(
+                                    Icons.confirmation_number_outlined,
+                                    size: 16,
+                                    color: Colors.blue.shade800,
+                                  ),
+                                  label: isLoadingCode
+                                      ? SizedBox(
+                                          width: 16.w,
+                                          height: 16.w,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            color: Colors.blue.shade800,
+                                          ),
+                                        )
+                                      : Text(
+                                          code == null
+                                              ? "Show Code"
+                                              : "Code: $code",
+                                          style: TextStyle(
+                                            fontSize: 11.sp,
+                                            color: Colors.blue.shade800,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                  onPressed: code != null
+                                      ? null
+                                      : () => controller.generateOrderCode(
+                                          order.orderId,
+                                        ),
+                                );
+                              }),
+
+                            if (order.status.toLowerCase() == 'pending')
+                              Align(
+                                alignment: Alignment.centerRight,
+                                child: Obx(() {
+                                  final isCancelling = controller
+                                      .cancellingOrders
+                                      .contains(order.orderId);
+
+                                  return OutlinedButton.icon(
+                                    onPressed: isCancelling
+                                        ? null
+                                        : () {
+                                            _showConfirmationDialog(
+                                              controller: controller,
+                                              order: order,
+                                            );
+                                          },
+                                    style: OutlinedButton.styleFrom(
+                                      side: const BorderSide(
+                                        color: Colors.redAccent,
+                                      ),
                                       shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(6.r),
+                                        borderRadius: BorderRadius.circular(
+                                          8.r,
+                                        ),
+                                      ),
+                                      padding: EdgeInsets.symmetric(
+                                        horizontal: 8.w,
                                       ),
                                     ),
-                                    icon: const Icon(Icons.delete_forever,
-                                        size: 16, color: Colors.white),
-                                    label: const Text(
-                                      "Yes, Cancel",
-                                      style: TextStyle(color: Colors.white),
+                                    icon: isCancelling
+                                        ? SizedBox(
+                                            width: 14.w,
+                                            height: 14.w,
+                                            child:
+                                                const CircularProgressIndicator(
+                                                  strokeWidth: 2,
+                                                  color: Colors.redAccent,
+                                                ),
+                                          )
+                                        : const Icon(
+                                            Icons.cancel_outlined,
+                                            color: Colors.redAccent,
+                                            size: 14,
+                                          ),
+                                    label: Text(
+                                      isCancelling
+                                          ? "Cancelling..."
+                                          : "Cancel Order",
+                                      style: TextStyle(
+                                        color: Colors.redAccent,
+                                        fontSize: 12.sp,
+                                        fontWeight: FontWeight.w600,
+                                      ),
                                     ),
-                                    onPressed: () {
-                                      Get.back();
-                                      controller.cancelOrder(o);
-                                    },
-                                  ),
-                                ],
+                                  );
+                                }),
                               ),
-                            );
-                          },
+                          ],
                         ),
-                      ),
+                        SizedBox(height: 10.h),
+
+                        // Items
+                        Column(children: order.items.map(_itemCard).toList()),
+                        6.h.verticalSpace,
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            Text(
+                              "Total: ",
+                              style: TextStyle(
+                                fontSize: 12.sp,
+                                fontWeight: FontWeight.w400,
+                                color: Colors.black45,
+                              ),
+                            ),
+                            Text(
+                              "£ ${order.subtotal.toStringAsFixed(2)}",
+                              style: TextStyle(
+                                fontSize: 12.sp,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
-                ],
-              ),
+                  ),
+                ),
+              ],
             );
           },
         );
       }),
     );
   }
+}
+
+Widget _itemCard(OrderedItem item) {
+  return Container(
+    margin: EdgeInsets.only(bottom: 10.h),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(8.r),
+          child: Image.network(
+            item.imagePath,
+            width: 70.w,
+            height: 70.w,
+            fit: BoxFit.cover,
+          ),
+        ),
+        SizedBox(width: 10.w),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                item.productName,
+                style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w600),
+              ),
+              SizedBox(height: 2.h),
+              if (item.brand.isNotEmpty)
+                Text(
+                  "Brand: ${item.brand.isEmpty ? 'N/A' : item.brand}",
+                  style: TextStyle(
+                    fontSize: 12.sp,
+                    color: Colors.grey.shade600,
+                  ),
+                ),
+              if (item.color.isNotEmpty || item.variant.isNotEmpty)
+                Text(
+                  "Color: ${item.color}, Variant: ${item.variant}",
+                  style: TextStyle(
+                    fontSize: 12.sp,
+                    color: Colors.grey.shade700,
+                  ),
+                ),
+              2.h.verticalSpace,
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    "Qty: ${item.quantity}",
+                    style: TextStyle(
+                      fontSize: 12.sp,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  Text(
+                    "£ ${(item.quantity * item.rate).toStringAsFixed(2)}",
+                    style: TextStyle(
+                      fontSize: 12.sp,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+void _showConfirmationDialog({
+  required OrderListController controller,
+  required Order order,
+}) {
+  Get.dialog(
+    AlertDialog(
+      title: const Text("Cancel Order"),
+      content: Text("Are you sure you want to cancel Order #${order.orderId}?"),
+      actions: [
+        TextButton(onPressed: Get.back, child: const Text("No")),
+        ElevatedButton.icon(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.redAccent,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(6.r),
+            ),
+          ),
+          icon: const Icon(Icons.delete_forever, color: Colors.white, size: 16),
+          label: const Text(
+            "Yes, Cancel",
+            style: TextStyle(color: Colors.white),
+          ),
+          onPressed: () {
+            Get.back();
+            controller.cancelOrder(order.orderId);
+          },
+        ),
+      ],
+    ),
+  );
 }

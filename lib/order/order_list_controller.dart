@@ -1,39 +1,25 @@
-import 'dart:math';
 import 'package:get/get.dart';
 import 'package:flutter/material.dart';
-
-class OrderModel {
-  final String id;
-  final String image;
-  final String status;
-  final String orderCode;
-  final double amount;
-  final DateTime date;
-  final bool canCancel; // 🔹 mock backend flag
-
-  OrderModel({
-    required this.id,
-    required this.image,
-    required this.status,
-    required this.orderCode,
-    required this.amount,
-    required this.date,
-    this.canCancel = false,
-  });
-}
+import 'get_customer_orders_service.dart';
 
 class OrderListController extends GetxController {
-  final RxList<OrderModel> orders = <OrderModel>[].obs;
+  final RxList<SellerOrders> sellers = <SellerOrders>[].obs;
+
   final RxBool isLoading = false.obs;
   final RxBool isLoadingMore = false.obs;
   final ScrollController scrollController = ScrollController();
 
   int currentPage = 1;
-  int totalPages = 3;
+  int totalPages = 1;
+  final int limit = 10;
+  late String status;
+
+  final _service = GetCustomerOrdersService();
 
   @override
   void onInit() {
     super.onInit();
+    status = (Get.arguments?['status'] ?? 'pending').toString().toLowerCase();
     fetchOrders();
     scrollController.addListener(_scrollListener);
   }
@@ -48,75 +34,115 @@ class OrderListController extends GetxController {
     }
   }
 
+  /// 🔹 Fetch first page
   Future<void> fetchOrders() async {
     isLoading.value = true;
-    await Future.delayed(const Duration(seconds: 2));
+    currentPage = 1;
 
-    final status = Get.arguments?['status'] ?? 'Pending';
-    final newOrders = List.generate(
-      10,
-      (index) => OrderModel(
-        id: 'ORD-${currentPage}0$index',
-        image: 'https://avatar.iran.liara.run/public',
+    try {
+      final res = await _service.getCustomerOrders(
         status: status,
-        orderCode: _generateCode(),
-        amount: 15 + Random().nextInt(80) + 0.99,
-        date: DateTime.now().subtract(Duration(days: index * 2)),
+        page: currentPage,
+        limit: limit,
+      );
 
-        // 🔹 Mocked cancel flag
-        canCancel:
-            (status == 'Pending') ||
-            (status != 'Delivered' && Random().nextBool()),
-      ),
-    );
-
-    orders.assignAll(newOrders);
-    isLoading.value = false;
+      if (res.isSuccess) {
+        sellers.assignAll(res.sellers);
+        totalPages = res.pagination.totalPages;
+      } else {
+        sellers.clear();
+        Get.snackbar("Error", "Failed to fetch orders.");
+      }
+    } catch (e) {
+      Get.snackbar("Error", e.toString());
+      sellers.clear();
+    } finally {
+      isLoading.value = false;
+    }
   }
 
+  /// 🔹 Load next page for infinite scroll
   Future<void> loadMore() async {
     if (currentPage >= totalPages) return;
     isLoadingMore.value = true;
-    await Future.delayed(const Duration(seconds: 2));
 
-    final nextPage = currentPage + 1;
-    final status = Get.arguments?['status'] ?? 'Pending';
-    final newOrders = List.generate(
-      10,
-      (index) => OrderModel(
-        id: 'ORD-${nextPage}0$index',
-        image: 'https://avatar.iran.liara.run/public',
+    try {
+      final nextPage = currentPage + 1;
+
+      final res = await _service.getCustomerOrders(
         status: status,
-        orderCode: _generateCode(),
-        amount: 15 + Random().nextInt(80) + 0.99,
-        date: DateTime.now().subtract(Duration(days: index * 3)),
-        canCancel:
-            (status == 'Pending') ||
-            (status != 'Delivered' && Random().nextBool()),
-      ),
-    );
+        page: nextPage,
+        limit: limit,
+      );
 
-    orders.addAll(newOrders);
-    currentPage = nextPage;
-    isLoadingMore.value = false;
+      if (res.isSuccess && res.sellers.isNotEmpty) {
+        sellers.addAll(res.sellers);
+        currentPage = nextPage;
+      }
+    } catch (e) {
+      Get.snackbar("Error", e.toString());
+    } finally {
+      isLoadingMore.value = false;
+    }
   }
 
-  void cancelOrder(OrderModel order) {
-    orders.remove(order);
-    Get.snackbar(
-      "Order Cancelled",
-      "Order ${order.orderCode} has been cancelled.",
-      backgroundColor: Colors.black87,
-      colorText: Colors.white,
-      snackPosition: SnackPosition.TOP,
-      duration: const Duration(seconds: 2),
-    );
+  /// 🔹 Generate code for a specific order (from /generate_unicode.php)
+  final RxMap<String, String> orderCodes = <String, String>{}.obs;
+  final RxSet<String> loadingCodes = <String>{}.obs;
+
+  Future<void> generateOrderCode(String orderId) async {
+    if (orderCodes.containsKey(orderId)) return; // already loaded
+    loadingCodes.add(orderId);
+
+    try {
+      final code = await _service.generateUnicode(orderId);
+      if (code != null) {
+        orderCodes[orderId] = code;
+      } else {
+        Get.snackbar("Error", "Failed to generate code for order $orderId");
+      }
+    } catch (e) {
+      Get.snackbar("Error", e.toString());
+    } finally {
+      loadingCodes.remove(orderId);
+    }
   }
 
-  String _generateCode() {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    final rand = Random();
-    return List.generate(6, (_) => chars[rand.nextInt(chars.length)]).join();
+  /// 🔹 Cancel Order API Call
+  final RxSet<String> cancellingOrders = <String>{}.obs;
+
+  Future<void> cancelOrder(String orderId) async {
+    if (cancellingOrders.contains(orderId)) return; // prevent double tap
+    cancellingOrders.add(orderId);
+
+    try {
+      final success =
+          true; //await _service.cancelOrder(orderId); //TODO no cancel api yet
+
+      if (success) {
+        // Remove the order locally or mark as cancelled
+        for (final seller in sellers) {
+          seller.orders.removeWhere((o) => o.orderId == orderId);
+        }
+        Get.snackbar(
+          "Order Cancelled",
+          "Order #$orderId has been cancelled successfully.",
+          snackPosition: SnackPosition.TOP,
+          backgroundColor: Colors.black87,
+          colorText: Colors.white,
+        );
+      } else {
+        Get.snackbar(
+          "Error",
+          "Failed to cancel the order. Please try again.",
+          snackPosition: SnackPosition.BOTTOM,
+        );
+      }
+    } catch (e) {
+      Get.snackbar("Error", e.toString(), snackPosition: SnackPosition.BOTTOM);
+    } finally {
+      cancellingOrders.remove(orderId);
+    }
   }
 
   @override

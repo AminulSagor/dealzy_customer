@@ -12,6 +12,8 @@ class MyCartController extends GetxController {
   final RxList<CartItem> items = <CartItem>[].obs;
   final Rxn<SellerInfo> seller = Rxn<SellerInfo>();
 
+  final RxBool isOptionsLoading = false.obs;
+
   ///temp for coin
   Map<String, int> coinData = {};
 
@@ -31,14 +33,13 @@ class MyCartController extends GetxController {
       isLoading.value = true;
       final response = await _cartService.getCarts();
 
-      print(response.carts[0].colors);
-
       if (response.isSuccess) {
         seller.value = response.seller;
         items.assignAll(response.carts);
 
         //temp for coin
-        coinData['available'] = response.availableCoins;
+        coinData['available'] = 100;
+        // response.availableCoins;
         coinData['minimum'] = response.minimumUse;
       } else {
         Get.snackbar('Error', 'Failed to load cart items');
@@ -47,6 +48,39 @@ class MyCartController extends GetxController {
       Get.snackbar('Error', e.toString());
     } finally {
       isLoading.value = false;
+    }
+  }
+
+  Future<void> fetchColorsAndVariants(String productId, int index) async {
+    try {
+      isOptionsLoading.value = true;
+      final colors = await _cartService.getProductColors(productId);
+      final variants = await _cartService.getProductVariants(productId);
+
+      items[index].colors = colors;
+      items[index].variants = variants;
+
+      if (colors.isNotEmpty) {
+        items[index].selectedColor.value = colors.first;
+      } else {
+        items[index].selectedColor.value = null;
+      }
+      if (variants.isNotEmpty) {
+        items[index].selectedVariant.value = variants.first;
+      } else {
+        items[index].selectedVariant.value = null;
+      }
+
+      debugPrint(
+        '✅ ${items[index].productName} | ${items[index].productId} => ${colors.length} colors, ${variants.length} variants',
+      );
+    } catch (e) {
+      isOptionsLoading.value = false;
+      debugPrint(
+        '⚠️ Error fetching extras for ${items[index].productName}: $e',
+      );
+    } finally {
+      isOptionsLoading.value = false;
     }
   }
 
@@ -62,7 +96,11 @@ class MyCartController extends GetxController {
   void toggleSelectAll(bool? value) {
     selectAll.value = value ?? false;
     for (final item in items) {
-      item.isSelected.value = selectAll.value;
+      if (item.isAvailable) {
+        item.isSelected.value = selectAll.value;
+      } else {
+        item.isSelected.value = false;
+      }
     }
   }
 
@@ -72,15 +110,29 @@ class MyCartController extends GetxController {
   }
 
   /// ✅ Quantity adjustments
-  void increaseQuantity(CartItem item) => item.quantity.value++;
+  void increaseQuantity(CartItem item) {
+    if (item.quantity.value < item.stock) {
+      item.quantity.value++;
+    }
+  }
+
   void decreaseQuantity(CartItem item) {
     if (item.quantity.value > 1) item.quantity.value--;
   }
 
   /// ✅ Remove single or multiple
-  void removeItem(CartItem item) => items.remove(item);
+  void removeItem(CartItem item) {
+    items.remove(item);
+    if (items.isEmpty) {
+      seller.value = null;
+    }
+  }
+
   void bulkDelete() {
     items.removeWhere((item) => item.isSelected.value);
+    if (items.isEmpty) {
+      seller.value = null;
+    }
     selectAll.value = false;
   }
 

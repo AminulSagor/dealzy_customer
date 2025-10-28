@@ -72,40 +72,6 @@ class MyCartView extends GetView<MyCartController> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    /// 🔹 Select All + Bulk Delete
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Row(
-                          children: [
-                            Text(
-                              "Select all",
-                              style: TextStyle(fontSize: 13.sp),
-                            ),
-                            Checkbox(
-                              value: controller.selectAll.value,
-                              onChanged: controller.toggleSelectAll,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(4.r),
-                              ),
-                              materialTapTargetSize:
-                                  MaterialTapTargetSize.shrinkWrap,
-                            ),
-                          ],
-                        ),
-                        IconButton(
-                          icon: const Icon(
-                            Icons.delete_outline,
-                            color: Colors.redAccent,
-                          ),
-                          onPressed: controller.bulkDelete,
-                          tooltip: "Delete selected items",
-                        ),
-                      ],
-                    ),
-
-                    SizedBox(height: 6.h),
-
                     /// 🔹 Product Group
                     Expanded(
                       child: Container(
@@ -146,6 +112,18 @@ class MyCartView extends GetView<MyCartController> {
                                     ),
                                   ),
                                 ),
+                                IconButton(
+                                  icon: Icon(
+                                    Icons.delete_outline,
+                                    color: controller.selectedCount < 1
+                                        ? Colors.grey
+                                        : Colors.redAccent,
+                                  ),
+                                  onPressed: controller.selectedCount < 1
+                                      ? null
+                                      : controller.bulkDelete,
+                                  tooltip: "Delete selected items",
+                                ),
                               ],
                             ),
 
@@ -181,6 +159,7 @@ class MyCartView extends GetView<MyCartController> {
                                     child: _CartTile(
                                       item: item,
                                       controller: controller,
+                                      itemIndex: i,
                                     ),
                                   );
                                 },
@@ -195,17 +174,16 @@ class MyCartView extends GetView<MyCartController> {
               ),
 
             /// 🔄 Loading overlay
-            if (isLoading)
-              Container(
-                color: Colors.white.withOpacity(0.7),
-                child: Center(
-                  child: SizedBox(
-                    width: 45.w,
-                    height: 45.w,
-                    child: const CircularProgressIndicator(
-                      color: Color(0xFF124A89),
-                      strokeWidth: 3,
-                    ),
+            if (isLoading) _loader(),
+
+            if (!isLoading && seller == null)
+              Center(
+                child: Text(
+                  'Cart is empty',
+                  style: TextStyle(
+                    fontSize: 12.sp,
+                    fontWeight: FontWeight.w400,
+                    color: Colors.grey,
                   ),
                 ),
               ),
@@ -216,19 +194,37 @@ class MyCartView extends GetView<MyCartController> {
   }
 }
 
+Widget _loader({double? width, double? height}) {
+  return Container(
+    color: Colors.white.withOpacity(0.7),
+    child: Center(
+      child: SizedBox(
+        width: width ?? 45.w,
+        height: height ?? 45.w,
+        child: const CircularProgressIndicator(
+          color: Color(0xFF124A89),
+          strokeWidth: 3,
+        ),
+      ),
+    ),
+  );
+}
+
 /// 🔹 Cart Tile Widget
 class _CartTile extends StatelessWidget {
   final CartItem item;
   final MyCartController controller;
+  final int itemIndex;
 
-  const _CartTile({required this.item, required this.controller});
+  const _CartTile({
+    required this.item,
+    required this.controller,
+    required this.itemIndex,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Obx(() {
-      final colorText = item.selectedColor.value?.color;
-      final variantText = item.selectedVariant.value?.variant;
-
       return Container(
         margin: EdgeInsets.only(bottom: 8.h),
         padding: EdgeInsets.all(8.w),
@@ -242,7 +238,9 @@ class _CartTile extends StatelessWidget {
             /// Checkbox
             Checkbox(
               value: item.isSelected.value,
-              onChanged: (_) => controller.toggleItem(item),
+              onChanged: item.isAvailable
+                  ? (_) => controller.toggleItem(item)
+                  : null,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(4.r),
               ),
@@ -276,7 +274,7 @@ class _CartTile extends StatelessWidget {
                   ),
                   if (item.brand != null && item.brand != '')
                     Text(
-                      item.brand!,
+                      'Brand: ${item.brand!}',
                       style: TextStyle(
                         fontSize: 11.5.sp,
                         color: Colors.grey.shade600,
@@ -285,22 +283,24 @@ class _CartTile extends StatelessWidget {
 
                   /// 🔹 Color & Variant Selection Row
                   GestureDetector(
-                    onTap: () => _showColorVariantSheet(context, item),
+                    onTap: () => _showColorVariantSheet(
+                      item: item,
+                      itemIndex: itemIndex,
+                    ),
                     child: Row(
                       children: [
-                        Expanded(
-                          child: Text(
-                            "${colorText == null ? '' : 'Color: $colorText, '}${variantText == null ? '' : 'Variant: $variantText, '}",
-                            style: TextStyle(
-                              fontSize: 11.5.sp,
-                              color: Colors.grey.shade700,
-                            ),
-                            overflow: TextOverflow.ellipsis,
+                        Text(
+                          'Available options',
+                          style: TextStyle(
+                            fontSize: 11.5.sp,
+                            color: Colors.grey.shade700,
                           ),
+                          overflow: TextOverflow.ellipsis,
                         ),
+                        4.w.horizontalSpace,
                         const Icon(
                           Icons.arrow_forward_ios_rounded,
-                          size: 12,
+                          size: 10,
                           color: Colors.grey,
                         ),
                       ],
@@ -374,7 +374,11 @@ class _CartTile extends StatelessWidget {
   }
 
   /// 🔹 Bottom Sheet for Color & Variant selection
-  void _showColorVariantSheet(BuildContext context, CartItem item) {
+  void _showColorVariantSheet({
+    required CartItem item,
+    required int itemIndex,
+  }) {
+    controller.fetchColorsAndVariants(item.productId, itemIndex);
     Get.bottomSheet(
       Container(
         padding: EdgeInsets.all(16.w),
@@ -383,117 +387,193 @@ class _CartTile extends StatelessWidget {
           borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 40.w,
-                  height: 4.h,
-                  margin: EdgeInsets.only(bottom: 16.h),
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade400,
-                    borderRadius: BorderRadius.circular(2.r),
+          child: Obx(() {
+            final isOptionsLoading = controller.isOptionsLoading.value;
+            final isNoOptions =
+                !isOptionsLoading &&
+                item.selectedColor.value == null &&
+                item.selectedVariant.value == null;
+
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40.w,
+                    height: 4.h,
+                    margin: EdgeInsets.only(bottom: 16.h),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade400,
+                      borderRadius: BorderRadius.circular(2.r),
+                    ),
                   ),
                 ),
-              ),
-              Text(
-                "Choose Options",
-                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15.sp),
-              ),
-              SizedBox(height: 14.h),
-
-              /// 🔹 Color Selection
-              if (item.colors.isNotEmpty)
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                Row(
                   children: [
-                    Text(
-                      "Color",
-                      style: TextStyle(
-                        fontSize: 13.sp,
-                        fontWeight: FontWeight.w500,
+                    /// Product Image
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(6.r),
+                      child: Image.network(
+                        item.imagePath,
+                        width: 60.w,
+                        height: 60.w,
+                        fit: BoxFit.cover,
                       ),
                     ),
-                    SizedBox(height: 6.h),
-                    Obx(() {
-                      return Wrap(
-                        spacing: 8,
-                        children: item.colors.map((c) {
-                          final isSelected =
-                              item.selectedColor.value?.id == c.id;
-                          return ChoiceChip(
-                            label: Text(c.color),
-                            selected: isSelected,
-                            onSelected: (_) => item.selectedColor.value = c,
-                            selectedColor: Colors.blue.shade100,
-                          );
-                        }).toList(),
-                      );
-                    }),
-                    SizedBox(height: 14.h),
+                    SizedBox(width: 10.w),
+
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          item.productName,
+                          style: TextStyle(
+                            fontSize: 13.5.sp,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.black,
+                          ),
+                        ),
+                        if (item.brand != null && item.brand != '')
+                          Text(
+                            item.brand!,
+                            style: TextStyle(
+                              fontSize: 11.5.sp,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+
+                        /// Price
+                        Text(
+                          "\£${item.price.toStringAsFixed(0)}",
+                          style: TextStyle(
+                            fontSize: 14.sp,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
                   ],
                 ),
-
-              /// 🔹 Variant Selection
-              if (item.variants.isNotEmpty)
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      "Variant",
-                      style: TextStyle(
-                        fontSize: 13.sp,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    SizedBox(height: 6.h),
-                    Obx(() {
-                      return Wrap(
-                        spacing: 8,
-                        children: item.variants.map((v) {
-                          final isSelected =
-                              item.selectedVariant.value?.id == v.id;
-                          return ChoiceChip(
-                            label: Text(v.variant),
-                            selected: isSelected,
-                            onSelected: (_) => item.selectedVariant.value = v,
-                            selectedColor: Colors.green.shade100,
-                          );
-                        }).toList(),
-                      );
-                    }),
-                  ],
-                ),
-
-              SizedBox(height: 24.h),
-              Center(
-                child: ElevatedButton(
-                  onPressed: () => Get.back(),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF124A89),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8.r),
-                    ),
+                20.h.verticalSpace,
+                Text(
+                  "Choose Options",
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 15.sp,
                   ),
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: 32.w,
-                      vertical: 10.h,
-                    ),
+                ),
+                SizedBox(height: 14.h),
+
+                if (controller.isOptionsLoading.value) ...[
+                  _loader(width: 30.w, height: 30.w),
+                ],
+
+                if (isNoOptions)
+                  Center(
                     child: Text(
-                      "Apply",
+                      '--- No color and variant options available ---',
                       style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 13.5.sp,
+                        fontSize: 12.sp,
+                        fontWeight: FontWeight.w400,
+                        color: Colors.grey,
                       ),
                     ),
                   ),
-                ),
-              ),
-            ],
-          ),
+
+                /// 🔹 Color Selection
+                if (item.colors.isNotEmpty)
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "Color",
+                        style: TextStyle(
+                          fontSize: 13.sp,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      SizedBox(height: 6.h),
+                      Obx(() {
+                        return Wrap(
+                          spacing: 8,
+                          children: item.colors.map((c) {
+                            final isSelected =
+                                item.selectedColor.value?.id == c.id;
+                            return ChoiceChip(
+                              label: Text(c.color),
+                              selected: isSelected,
+                              onSelected: (_) => item.selectedColor.value = c,
+                              selectedColor: Colors.blue.shade100,
+                            );
+                          }).toList(),
+                        );
+                      }),
+                      SizedBox(height: 14.h),
+                    ],
+                  ),
+
+                /// 🔹 Variant Selection
+                if (item.variants.isNotEmpty)
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "Variant",
+                        style: TextStyle(
+                          fontSize: 13.sp,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      SizedBox(height: 6.h),
+                      Obx(() {
+                        return Wrap(
+                          spacing: 8,
+                          children: item.variants.map((v) {
+                            final isSelected =
+                                item.selectedVariant.value?.id == v.id;
+                            return ChoiceChip(
+                              label: Text(v.variant),
+                              selected: isSelected,
+                              onSelected: (_) => item.selectedVariant.value = v,
+                              selectedColor: Colors.green.shade100,
+                            );
+                          }).toList(),
+                        );
+                      }),
+                    ],
+                  ),
+
+                SizedBox(height: 24.h),
+
+                if (!isOptionsLoading && !isNoOptions)
+                  Center(
+                    child: ElevatedButton(
+                      onPressed: () => Get.back(),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF124A89),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8.r),
+                        ),
+                      ),
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 32.w,
+                          vertical: 10.h,
+                        ),
+                        child: Text(
+                          "Apply",
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13.5.sp,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            );
+          }),
         ),
       ),
     );

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'order_confirmation_controller.dart';
-import '../my_cart/my_cart_controller.dart';
 
 class OrderConfirmationView extends GetView<OrderConfirmationController> {
   const OrderConfirmationView({super.key});
@@ -93,177 +92,120 @@ class OrderConfirmationView extends GetView<OrderConfirmationController> {
             ),
 
             /// 🔹 Voucher Section & Coin Usage Section
-            Obx(
-              () => Container(
+            Obx(() {
+              final availableCoins = controller.availableCoins.value;
+              final minimumUse = controller.minimumUse.value;
+              final isValidCoins = availableCoins > minimumUse;
+              return Container(
                 padding: EdgeInsets.all(12.w),
                 decoration: BoxDecoration(
                   border: Border.all(color: Colors.grey.shade300),
                   borderRadius: BorderRadius.circular(10.r),
                   color: Colors.grey.shade50,
                 ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.end,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            "Voucher",
-                            style: TextStyle(
-                              fontSize: 13.sp,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          8.h.verticalSpace,
-                          Row(
-                            children: [
-                              Expanded(
-                                child: TextField(
-                                  onChanged: (v) =>
-                                      controller.voucher.value = v,
-                                  decoration: InputDecoration(
-                                    hintText: "Enter voucher code",
-                                    contentPadding: EdgeInsets.symmetric(
-                                      horizontal: 12.w,
-                                      vertical: 10.h,
-                                    ),
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(8.r),
-                                    ),
-                                  ),
-                                ),
-                              ),
-
-                              // ElevatedButton(
-                              //   onPressed: () =>
-                              //       controller.applyVoucher(controller.voucher.value),
-                              //   style: ElevatedButton.styleFrom(
-                              //     backgroundColor: const Color(0xFF124A89),
-                              //     shape: RoundedRectangleBorder(
-                              //       borderRadius: BorderRadius.circular(8.r),
-                              //     ),
-                              //     padding: EdgeInsets.symmetric(
-                              //       horizontal: 16.w,
-                              //       vertical: 12.h,
-                              //     ),
-                              //   ),
-                              //   child: Text(
-                              //     "Apply",
-                              //     style: TextStyle(fontSize: 13.sp, color: Colors.white),
-                              //   ),
-                              // ),
-                            ],
-                          ),
-                          if (controller.availableCoins.value > 0 &&
-                              controller.availableCoins.value >
-                                  controller.minimumUse.value) ...[
-                            10.h.verticalSpace,
-                            Text(
-                              "Your Available Coins: ${controller.availableCoins.value}",
-                              style: TextStyle(
-                                fontSize: 13.sp,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            SizedBox(height: 6.h),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: TextField(
-                                    enabled:
-                                        controller.availableCoins.value > 0,
-                                    controller: coinController,
-                                    keyboardType: TextInputType.number,
-                                    decoration: InputDecoration(
-                                      hintText: "Enter coins to use",
-                                      contentPadding: EdgeInsets.symmetric(
-                                        horizontal: 12.w,
-                                        vertical: 6.h,
-                                      ),
-                                      border: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(
-                                          8.r,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-
-                                // ElevatedButton(
-                                //   onPressed: () {
-                                //     final entered = int.tryParse(coinController.text);
-                                //     if (entered != null) {
-                                //       controller.useCoins(entered);
-                                //     }
-                                //   },
-                                //   style: ElevatedButton.styleFrom(
-                                //     backgroundColor: Colors.amber.shade700,
-                                //     shape: RoundedRectangleBorder(
-                                //       borderRadius: BorderRadius.circular(8.r),
-                                //     ),
-                                //     padding: EdgeInsets.symmetric(
-                                //       horizontal: 16.w,
-                                //       vertical: 12.h,
-                                //     ),
-                                //   ),
-                                //   child: Text(
-                                //     "Use Coins",
-                                //     style: TextStyle(
-                                //       fontSize: 13.sp,
-                                //       color: Colors.white,
-                                //     ),
-                                //   ),
-                                // ),
-                              ],
-                            ),
-                            if (controller.usedCoins.value > 0) ...[
-                              SizedBox(height: 5.h),
-                              Text(
-                                "Using ${controller.usedCoins.value} coins",
-                                style: TextStyle(
-                                  fontSize: 12.5.sp,
-                                  color: Colors.green.shade700,
-                                ),
-                              ),
-                            ],
-                          ],
-                        ],
+                    Text(
+                      "Voucher",
+                      style: TextStyle(
+                        fontSize: 12.sp,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
-                    20.w.horizontalSpace,
-                    ElevatedButton(
-                      onPressed: () {
-                        final coinToUse = int.tryParse(coinController.text);
-                        controller.applyDiscount(
-                          voucherCode: controller.voucher.value,
-                          coinsToUse: coinToUse,
-                        );
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF124A89),
-                        shape: RoundedRectangleBorder(
+                    8.h.verticalSpace,
+                    TextField(
+                      onChanged: (v) => controller.voucher.value = v,
+                      decoration: InputDecoration(
+                        hintText: "Enter voucher code",
+                        contentPadding: EdgeInsets.symmetric(
+                          horizontal: 12.w,
+                          vertical: 10.h,
+                        ),
+                        border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8.r),
                         ),
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 25.w,
-                          vertical: 12.h,
+                      ),
+                    ),
+                    if (isValidCoins) ...[
+                      10.h.verticalSpace,
+                      Text(
+                        "Your Available Coins: $availableCoins",
+                        style: TextStyle(
+                          fontSize: 12.sp,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
-                      child: controller.isApplying.value
-                          ? CircularProgressIndicator()
-                          : Text(
-                              "Apply",
-                              style: TextStyle(
-                                fontSize: 13.sp,
-                                color: Colors.white,
-                              ),
-                            ),
+                      SizedBox(height: 6.h),
+                      TextField(
+                        enabled: isValidCoins,
+                        onChanged: (v) => controller.coin.value = v,
+                        keyboardType: TextInputType.number,
+                        decoration: InputDecoration(
+                          hintText: "Enter coins to use",
+                          contentPadding: EdgeInsets.symmetric(
+                            horizontal: 12.w,
+                            vertical: 6.h,
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8.r),
+                          ),
+                        ),
+                      ),
+                      if (controller.usedCoins.value > 0) ...[
+                        SizedBox(height: 5.h),
+                        Text(
+                          "Using ${controller.usedCoins.value} coins",
+                          style: TextStyle(
+                            fontSize: 12.5.sp,
+                            color: Colors.green.shade700,
+                          ),
+                        ),
+                      ],
+                    ],
+                    12.h.verticalSpace,
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed:
+                            controller.isApplying.value ||
+                                controller.voucher.value.isEmpty &&
+                                    controller.coin.value.isEmpty
+                            ? null
+                            : () {
+                                final coinToUse = int.tryParse(
+                                  controller.coin.value,
+                                );
+                                controller.applyDiscount(
+                                  voucherCode: controller.voucher.value,
+                                  coinsToUse: coinToUse,
+                                );
+                              },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF124A89),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8.r),
+                          ),
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 25.w,
+                            vertical: 12.h,
+                          ),
+                        ),
+                        child: Text(
+                          controller.isApplying.value
+                              ? 'Please wait...'
+                              : "Apply",
+                          style: TextStyle(
+                            fontSize: 13.sp,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
                     ),
                   ],
                 ),
-              ),
-            ),
+              );
+            }),
 
             /// Summary
             Obx(
@@ -276,6 +218,8 @@ class OrderConfirmationView extends GetView<OrderConfirmationController> {
                   const Divider(),
                   _priceRow("Total", controller.total, bold: true),
                   SizedBox(height: 12.h),
+
+                  10.h.verticalSpace,
 
                   /// Proceed Button
                   ElevatedButton(
@@ -330,30 +274,39 @@ class OrderConfirmationView extends GetView<OrderConfirmationController> {
             children: <Widget>[
               Column(
                 children: [
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: const Text(
-                      'Do you want to pay online?',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+                  const Text(
+                    'Payment Confirmation',
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                   ),
                   SizedBox(height: 10),
                   Divider(color: Colors.grey[300]),
                   SizedBox(height: 10),
                   const Text(
                     'Total Amount',
-                    style: TextStyle(fontSize: 16, color: Colors.grey),
+                    style: TextStyle(fontSize: 12, color: Colors.grey),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     '£$amountToPay',
                     style: TextStyle(
-                      fontSize: 20,
+                      fontSize: 26,
                       fontWeight: FontWeight.bold,
                       color: Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: controller.noteController,
+                    maxLines: 2,
+                    decoration: InputDecoration(
+                      hintText: "Send message to seller (optional)",
+                      contentPadding: EdgeInsets.symmetric(
+                        horizontal: 12.w,
+                        vertical: 10.h,
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8.r),
+                      ),
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -364,7 +317,7 @@ class OrderConfirmationView extends GetView<OrderConfirmationController> {
               // 2. Online Payment Option
               ElevatedButton.icon(
                 icon: const Icon(Icons.payment),
-                label: const Text('Yes, Pay Online Now'),
+                label: Text('Pay Now'),
                 onPressed: controller.proceedToStripe,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.blue.shade700,
@@ -381,10 +334,10 @@ class OrderConfirmationView extends GetView<OrderConfirmationController> {
               // 3. Alternative/Other Payment Option
               OutlinedButton.icon(
                 icon: const Icon(Icons.access_time),
-                label: const Text('No, Pay Later'),
+                label: const Text('Pay Later'),
                 onPressed: () {
                   Get.back();
-                  showOrderConfirmedDialog();
+                  controller.onConfirmOrder();
                 },
                 style: OutlinedButton.styleFrom(
                   foregroundColor: Colors.blue.shade700,
@@ -403,150 +356,6 @@ class OrderConfirmationView extends GetView<OrderConfirmationController> {
       ),
       isDismissible: true,
       enableDrag: true,
-    );
-  }
-
-  void showOrderConfirmedDialog() {
-    Get.dialog(
-      // Use an AlertDialog for basic structure, then customize its content
-      AlertDialog(
-        contentPadding:
-            EdgeInsets.zero, // Important to control padding ourselves
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(
-            20,
-          ), // Rounded corners for the dialog
-        ),
-        backgroundColor: Colors.white, // Adapts to theme
-        content: Container(
-          // Padding for the inner content
-          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 30.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min, // Make column wrap its children
-            children: <Widget>[
-              // 1. Success Icon (inspired by the image)
-              Stack(
-                alignment: Alignment.center,
-                children: [
-                  // Glowing background circle
-                  Container(
-                    width: 90,
-                    height: 90,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Colors.green.shade100.withOpacity(
-                        0.5,
-                      ), // Lighter glow
-                    ),
-                  ),
-                  // Inner solid circle for the checkmark
-                  Container(
-                    width: 70,
-                    height: 70,
-                    decoration: const BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Colors.green, // Main orange color
-                    ),
-                    child: const Icon(
-                      Icons.check,
-                      color: Colors.white,
-                      size: 40,
-                    ),
-                  ),
-                  // Optional: A subtle "confetti" like effect visually if not animating
-                  // For actual confetti, you'd use a package or a custom painter
-                  Positioned(
-                    top: -20,
-                    left: -20,
-                    child: Icon(
-                      Icons.star,
-                      color: Colors.orange.withOpacity(0.3),
-                      size: 12,
-                    ),
-                  ),
-                  Positioned(
-                    bottom: -10,
-                    right: -10,
-                    child: Icon(
-                      Icons.circle,
-                      color: Colors.blue.withOpacity(0.3),
-                      size: 10,
-                    ),
-                  ),
-                  Positioned(
-                    top: -10,
-                    right: -25,
-                    child: Icon(
-                      Icons.square,
-                      color: Colors.green.withOpacity(0.3),
-                      size: 10,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 25),
-
-              // 2. Title: Order Confirmed
-              Text(
-                'Order Confirmed!',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black,
-                ),
-              ),
-              const SizedBox(height: 8),
-
-              // 3. Subtitle
-              Text(
-                'Your order has been placed successfully.',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 16, color: Colors.grey[600]),
-              ),
-              const SizedBox(height: 30),
-
-              // 4. "Go to Orders" Button
-              ElevatedButton(
-                onPressed: controller.onGoOrders,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue.shade700, // Primary action color
-                  foregroundColor: Colors.white,
-                  minimumSize: const Size(double.infinity, 50), // Full width
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  textStyle: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                child: const Text('Go to Orders'),
-              ),
-              const SizedBox(height: 15),
-
-              // 5. "Go to Home" Button
-              OutlinedButton(
-                onPressed: controller.onGoHome,
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.blue.shade700,
-                  side: BorderSide(color: Colors.blue.shade700, width: 2),
-                  minimumSize: const Size(double.infinity, 50), // Full width
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  textStyle: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                child: const Text('Go to Home'),
-              ),
-            ],
-          ),
-        ),
-      ),
-      barrierDismissible:
-          false, // User must choose an action, cannot tap outside
     );
   }
 
