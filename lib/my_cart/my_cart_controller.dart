@@ -3,6 +3,8 @@ import 'package:get/get.dart';
 
 import 'get_carts_service.dart';
 
+enum CartRowState { normal, deleting, success, error }
+
 class MyCartController extends GetxController {
   final GetCartsService _cartService = GetCartsService();
 
@@ -20,11 +22,19 @@ class MyCartController extends GetxController {
   /// ✅ Scroll controller for lazy loading (if needed later)
   final ScrollController scrollController = ScrollController();
 
+  // 🔹 holds current visual state per cart item
+  final RxMap<String, CartRowState> rowStates = <String, CartRowState>{}.obs;
+
   @override
   void onInit() {
     super.onInit();
     fetchCartItems();
     scrollController.addListener(_onScroll);
+  }
+
+  // convenience getter
+  CartRowState rowStateFor(String cartId) {
+    return rowStates[cartId] ?? CartRowState.normal;
   }
 
   /// ✅ Fetch from real API
@@ -38,8 +48,7 @@ class MyCartController extends GetxController {
         items.assignAll(response.carts);
 
         //temp for coin
-        coinData['available'] = 100;
-        // response.availableCoins;
+        coinData['available'] = response.availableCoins;
         coinData['minimum'] = response.minimumUse;
       } else {
         Get.snackbar('Error', 'Failed to load cart items');
@@ -120,20 +129,100 @@ class MyCartController extends GetxController {
     if (item.quantity.value > 1) item.quantity.value--;
   }
 
-  /// ✅ Remove single or multiple
-  void removeItem(CartItem item) {
-    items.remove(item);
-    if (items.isEmpty) {
-      seller.value = null;
+  /// 🔹 Called when user swipes to delete an item
+  Future<void> handleSwipeDelete(String cartId) async {
+    // mark as deleting (spinner state)
+    rowStates[cartId] = CartRowState.deleting;
+
+    try {
+      final ok = await _cartService.deleteCartItem(
+        cartId,
+      ); // <-- uses your service
+      if (ok) {
+        // success visual
+        rowStates[cartId] = CartRowState.success;
+
+        // brief "green tick" moment before actually removing the row
+        await Future.delayed(const Duration(milliseconds: 500));
+
+        // remove from list
+        items.removeWhere((i) => i.cartId == cartId);
+
+        // if cart is now empty, clear seller etc. (optional)
+        if (items.isEmpty) {
+          seller.value = null;
+        }
+
+        // cleanup tracking
+        rowStates.remove(cartId);
+      } else {
+        // show failure state briefly (red)
+        rowStates[cartId] = CartRowState.error;
+        await Future.delayed(const Duration(milliseconds: 800));
+
+        // bounce back to normal view
+        rowStates[cartId] = CartRowState.normal;
+      }
+    } catch (e) {
+      // also treat as failure
+      rowStates[cartId] = CartRowState.error;
+      await Future.delayed(const Duration(milliseconds: 800));
+      rowStates[cartId] = CartRowState.normal;
     }
   }
 
-  void bulkDelete() {
-    items.removeWhere((item) => item.isSelected.value);
+  /// Delete all currently selected items using the API.
+  /// Each row will animate through the same states as swipe delete.
+  Future<void> bulkDelete() async {
+    // Take a snapshot of selected items first,
+    // so we don't mutate the list while iterating.
+    final toDelete = items.where((i) => i.isSelected.value).toList();
+
+    // Nothing selected? just bail.
+    if (toDelete.isEmpty) return;
+
+    for (final cartItem in toDelete) {
+      final cartId = cartItem.cartId;
+
+      // mark row "deleting" for spinner state
+      rowStates[cartId] = CartRowState.deleting;
+
+      try {
+        final ok = await _cartService.deleteCartItem(cartId);
+
+        if (ok) {
+          // mark success so UI shows green tick
+          rowStates[cartId] = CartRowState.success;
+
+          // brief success flash
+          await Future.delayed(const Duration(milliseconds: 500));
+
+          // remove from list
+          items.removeWhere((i) => i.cartId == cartId);
+
+          // cleanup tracking for that row
+          rowStates.remove(cartId);
+        } else {
+          // API said not success -> show error briefly
+          rowStates[cartId] = CartRowState.error;
+          await Future.delayed(const Duration(milliseconds: 800));
+          rowStates[cartId] = CartRowState.normal;
+        }
+      } catch (e) {
+        // network/other failure -> show error briefly then reset
+        rowStates[cartId] = CartRowState.error;
+        await Future.delayed(const Duration(milliseconds: 800));
+        rowStates[cartId] = CartRowState.normal;
+      }
+    }
+
+    // After loop cleanup
+    selectAll.value = false;
+
+    // If cart is now empty, clear seller so UI shows "Cart is empty"
     if (items.isEmpty) {
       seller.value = null;
     }
-    selectAll.value = false;
   }
 
   /// ✅ Computed properties

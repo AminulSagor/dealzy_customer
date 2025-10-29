@@ -136,7 +136,7 @@ class MyCartView extends GetView<MyCartController> {
                                 itemBuilder: (context, i) {
                                   final item = items[i];
                                   return Dismissible(
-                                    key: ValueKey(item),
+                                    key: ValueKey(item.cartId),
                                     direction: DismissDirection.endToStart,
                                     background: Container(
                                       alignment: Alignment.centerRight,
@@ -154,8 +154,15 @@ class MyCartView extends GetView<MyCartController> {
                                         color: Colors.white,
                                       ),
                                     ),
-                                    onDismissed: (_) =>
-                                        controller.removeItem(item),
+
+                                    // <- we take control; we won't let Dismissible auto-remove
+                                    confirmDismiss: (_) async {
+                                      // fire delete flow
+                                      controller.handleSwipeDelete(item.cartId);
+                                      // don't let Flutter auto-remove; we'll remove manually in controller
+                                      return false;
+                                    },
+
                                     child: _CartTile(
                                       item: item,
                                       controller: controller,
@@ -225,6 +232,103 @@ class _CartTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Obx(() {
+      final state = controller.rowStateFor(item.cartId);
+
+      // ✅ SUCCESS STATE (green tick)
+      if (state == CartRowState.success) {
+        return Container(
+          margin: EdgeInsets.only(bottom: 8.h),
+          padding: EdgeInsets.all(16.w),
+          decoration: BoxDecoration(
+            color: Colors.green.shade50,
+            borderRadius: BorderRadius.circular(8.r),
+            border: Border.all(color: Colors.green.shade400),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.check_circle_rounded,
+                color: Colors.green.shade600,
+                size: 20.sp,
+              ),
+              8.w.horizontalSpace,
+              Text(
+                "Removed",
+                style: TextStyle(
+                  fontSize: 13.sp,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.green.shade700,
+                ),
+              ),
+            ],
+          ),
+        );
+      }
+
+      // ⏳ DELETING STATE (spinner)
+      if (state == CartRowState.deleting) {
+        return Container(
+          margin: EdgeInsets.only(bottom: 8.h),
+          padding: EdgeInsets.all(16.w),
+          decoration: BoxDecoration(
+            color: Colors.grey.shade200,
+            borderRadius: BorderRadius.circular(8.r),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              SizedBox(
+                width: 16.w,
+                height: 16.w,
+                child: const CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Colors.black54,
+                ),
+              ),
+              8.w.horizontalSpace,
+              Text(
+                "Removing...",
+                style: TextStyle(
+                  fontSize: 13.sp,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.black87,
+                ),
+              ),
+            ],
+          ),
+        );
+      }
+
+      // ❌ ERROR STATE (failure bounce-back)
+      if (state == CartRowState.error) {
+        return Container(
+          margin: EdgeInsets.only(bottom: 8.h),
+          padding: EdgeInsets.all(16.w),
+          decoration: BoxDecoration(
+            color: Colors.red.shade50,
+            borderRadius: BorderRadius.circular(8.r),
+            border: Border.all(color: Colors.redAccent),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.error_outline, color: Colors.redAccent, size: 20.sp),
+              8.w.horizontalSpace,
+              Text(
+                "Failed to remove",
+                style: TextStyle(
+                  fontSize: 13.sp,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.redAccent,
+                ),
+              ),
+            ],
+          ),
+        );
+      }
+
+      // 🟦 NORMAL STATE (your original tile UI)
       return Container(
         margin: EdgeInsets.only(bottom: 8.h),
         padding: EdgeInsets.all(8.w),
@@ -281,7 +385,7 @@ class _CartTile extends StatelessWidget {
                       ),
                     ),
 
-                  /// 🔹 Color & Variant Selection Row
+                  /// Color & Variant row (tap to change)
                   GestureDetector(
                     onTap: () => _showColorVariantSheet(
                       item: item,
@@ -319,7 +423,7 @@ class _CartTile extends StatelessWidget {
               ),
             ),
 
-            /// Quantity Controls + Availability
+            /// Qty controls + stock
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [

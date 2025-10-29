@@ -112,34 +112,26 @@ class OrderListController extends GetxController {
   final RxSet<String> cancellingOrders = <String>{}.obs;
 
   Future<void> cancelOrder(String orderId) async {
-    if (cancellingOrders.contains(orderId)) return; // prevent double tap
+    if (cancellingOrders.contains(orderId)) return;
     cancellingOrders.add(orderId);
 
     try {
-      final success =
-          true; //await _service.cancelOrder(orderId); //TODO no cancel api yet
+      final res = await _service.cancelOrderRequest(orderId);
 
-      if (success) {
-        // Remove the order locally or mark as cancelled
+      // If success, remove it (or mark it as cancelled, up to you)
+      if (res.isSuccess) {
+        // remove order with that ID from sellers list
         for (final seller in sellers) {
           seller.orders.removeWhere((o) => o.orderId == orderId);
         }
-        Get.snackbar(
-          "Order Cancelled",
-          "Order #$orderId has been cancelled successfully.",
-          snackPosition: SnackPosition.TOP,
-          backgroundColor: Colors.black87,
-          colorText: Colors.white,
-        );
-      } else {
-        Get.snackbar(
-          "Error",
-          "Failed to cancel the order. Please try again.",
-          snackPosition: SnackPosition.BOTTOM,
-        );
+
+        // Optionally: trigger a tiny toast/snackbar if you still want visual feedback
+        // (You said earlier you like inline UI, so you may skip)
+        // Get.snackbar("Request Sent", res.message);
       }
     } catch (e) {
-      Get.snackbar("Error", e.toString(), snackPosition: SnackPosition.BOTTOM);
+      // handle failure UI however you like
+      Get.snackbar("Error", e.toString());
     } finally {
       cancellingOrders.remove(orderId);
     }

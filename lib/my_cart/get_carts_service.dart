@@ -125,7 +125,7 @@ class GetCartResponse {
   final String status;
   final int availableCoins;
   final int minimumUse;
-  final SellerInfo seller;
+  final SellerInfo? seller;
   final List<CartItem> carts;
 
   const GetCartResponse({
@@ -142,7 +142,9 @@ class GetCartResponse {
     status: (j['status'] ?? '').toString(),
     availableCoins: int.tryParse(j['available_coins'].toString()) ?? 0,
     minimumUse: int.tryParse(j['minimum_use'].toString()) ?? 0,
-    seller: SellerInfo.fromJson(j['seller'] ?? {}),
+    seller: j['seller'] == null || j['seller'] == false
+        ? null
+        : SellerInfo.fromJson(j['seller'] ?? {}),
     carts: (j['carts'] as List<dynamic>? ?? [])
         .map((e) => CartItem.fromJson(e))
         .toList(),
@@ -161,7 +163,7 @@ class GetCartsService {
   final String _base;
   final TokenProvider _getToken;
 
-  /// ✅ Fetch cart + attach colors and variants
+  /// Fetch cart
   Future<GetCartResponse> getCarts() async {
     if (_base.isEmpty) {
       throw StateError('API_BASE_URL is empty. Check your .env.');
@@ -193,30 +195,10 @@ class GetCartsService {
       throw Exception('Failed to load cart details.');
     }
 
-    /// 🔹 Fetch product colors and variants for each product
-    // for (final item in parsed.carts) {
-    //   try {
-    //     final colors = await getProductColors(item.productId);
-    //     final variants = await getProductVariants(item.productId);
-
-    //     item.colors = colors;
-    //     item.variants = variants;
-
-    //     if (colors.isNotEmpty) item.selectedColor.value = colors.first;
-    //     if (variants.isNotEmpty) item.selectedVariant.value = variants.first;
-
-    //     debugPrint(
-    //       '✅ ${item.productName} => ${colors.length} colors, ${variants.length} variants',
-    //     );
-    //   } catch (e) {
-    //     debugPrint('⚠️ Error fetching extras for ${item.productName}: $e');
-    //   }
-    // }
-
     return parsed;
   }
 
-  /// ✅ Fetch product colors
+  /// Fetch product colors
   Future<List<ProductColor>> getProductColors(String productId) async {
     final token = await _getToken();
     final uri = Uri.parse(
@@ -243,7 +225,7 @@ class GetCartsService {
     return list;
   }
 
-  /// ✅ Fetch product variants
+  /// Fetch product variants
   Future<List<ProductVariant>> getProductVariants(String productId) async {
     final token = await _getToken();
     final uri = Uri.parse(
@@ -268,5 +250,47 @@ class GetCartsService {
         .toList();
 
     return list;
+  }
+
+  /// DELETE CART ITEM
+  Future<bool> deleteCartItem(String cartId) async {
+    if (_base.isEmpty) {
+      throw StateError('API_BASE_URL is empty. Check your .env.');
+    }
+
+    final token = await _getToken();
+    if (token == null || token.isEmpty) {
+      throw StateError('Not authenticated. Missing token.');
+    }
+
+    final uri = Uri.parse('$_base/delete_cart.php');
+
+    final headers = {
+      'Authorization': 'Bearer $token',
+      'Accept': 'application/json',
+      'Content-Type': 'application/json',
+    };
+    final body = jsonEncode({'cart_id': int.tryParse(cartId) ?? cartId});
+
+    final res = await http
+        .delete(uri, headers: headers, body: body)
+        .timeout(const Duration(seconds: 20));
+
+    if (res.statusCode != 200) {
+      throw Exception('HTTP ${res.statusCode}: ${res.reasonPhrase}');
+    }
+
+    final json = jsonDecode(res.body);
+    final status = json['status']?.toString().toLowerCase() ?? '';
+
+    if (status == 'success') {
+      debugPrint('✅ Cart item deleted successfully (cart_id: $cartId)');
+      return true;
+    } else {
+      debugPrint(
+        '⚠️ Failed to delete cart item (cart_id: $cartId): ${json['message']}',
+      );
+      return false;
+    }
   }
 }

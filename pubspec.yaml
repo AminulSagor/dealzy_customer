@@ -1,8 +1,7 @@
 name: dealzy
 description: "A new Flutter project."
 
-publish_to: 'none'
-
+publish_to: "none"
 
 version: 1.1.16+17
 
@@ -18,7 +17,6 @@ dependencies:
   geocoding: ^2.2.0
   confetti:
 
-
   cupertino_icons: ^1.0.8
   geolocator: ^14.0.2
   dio: ^5.9.0
@@ -31,6 +29,7 @@ dependencies:
   image_picker: ^1.2.0
   http_parser: ^4.0.2
   url_launcher:
+  flutter_stripe: ^12.1.0
 
 dev_dependencies:
   flutter_test:
@@ -38,12 +37,9 @@ dev_dependencies:
   flutter_native_splash: ^2.4.1
   flutter_launcher_icons: ^0.13.1
 
-
   flutter_lints: ^5.0.0
 
 flutter:
-
-
   uses-material-design: true
   assets:
     - assets/png/
@@ -60,19 +56,13 @@ flutter_native_splash:
   color: "#FFFFFF"
   image: assets/png/deazly_logo.png
 
-
-
-
-
   # Android 12+ requires separate section
   android_12:
     image: assets/png/deazly_logo.png
 
-
     color: "#FFFFFF"
 
     icon_background_color: "#FFFFFF"
-
 
   # iOS layout controls (keep centered logo)
   ios_content_mode: center

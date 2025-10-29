@@ -67,6 +67,10 @@ class OrderConfirmationController extends GetxController {
       if (res.isSuccess) {
         final theMsg = res.message.toLowerCase();
 
+        if (!theMsg.contains('invalid dealzy coin amount')) {
+          availableCoins.value -= coinsToUse ?? 0;
+        }
+
         if (theMsg.contains('added')) {
           discount.value = res.discount;
           voucher.value = voucherCode ?? '';

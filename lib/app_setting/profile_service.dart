@@ -35,8 +35,8 @@ typedef TokenProvider = Future<String?> Function();
 
 class ProfileService {
   ProfileService({TokenProvider? getToken})
-      : _getToken = getToken ?? TokenStorage.getToken,
-        _base = (dotenv.env['API_BASE_URL'] ?? '').replaceAll(RegExp(r'/+$'), '');
+    : _getToken = getToken ?? TokenStorage.getToken,
+      _base = (dotenv.env['API_BASE_URL'] ?? '').replaceAll(RegExp(r'/+$'), '');
 
   final String _base;
   final TokenProvider _getToken;
@@ -58,17 +58,16 @@ class ProfileService {
       'Accept': 'application/json',
     };
 
-
-
-    final res = await http.get(uri, headers: headers).timeout(const Duration(seconds: 20));
-
-
+    final res = await http
+        .get(uri, headers: headers)
+        .timeout(const Duration(seconds: 20));
 
     if (res.statusCode != 200) {
       throw Exception('HTTP ${res.statusCode}: ${res.reasonPhrase}');
     }
 
-    final Map<String, dynamic> json = jsonDecode(res.body) as Map<String, dynamic>;
+    final Map<String, dynamic> json =
+        jsonDecode(res.body) as Map<String, dynamic>;
     final status = (json['status'] ?? '').toString().toLowerCase();
     if (status != 'success') {
       throw Exception('Profile fetch failed');

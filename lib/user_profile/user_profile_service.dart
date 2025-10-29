@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:developer';
 import 'dart:io';
 
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -82,32 +83,38 @@ class BookmarkedPage {
 /// Profile payload from GET /get_user_profile.php
 class UserProfileData {
   final String name;
+  final String phone;
   final String postCode;
   final String adminDistrict;
   final String imagePath;
+  final int coins;
 
   const UserProfileData({
     required this.name,
+    required this.phone,
     required this.postCode,
     required this.adminDistrict,
     required this.imagePath,
+    required this.coins,
   });
 
   factory UserProfileData.fromJson(Map<String, dynamic> j) {
     final d = (j['data'] as Map<String, dynamic>? ?? const {});
     return UserProfileData(
       name: (d['name'] ?? '').toString(),
+      phone: (d['phone'] ?? '').toString(),
       postCode: (d['post_code'] ?? '').toString(),
       adminDistrict: (d['admin_dis'] ?? '').toString(),
       imagePath: (d['image_path'] ?? '').toString(),
+      coins: int.tryParse(d['coins']) ?? 0,
     );
   }
 }
 
 class UserProfileService {
   UserProfileService({TokenProvider? getToken})
-      : _getToken = getToken ?? TokenStorage.getToken,
-        _base = (dotenv.env['API_BASE_URL'] ?? '').replaceAll(RegExp(r'/+$'), '');
+    : _getToken = getToken ?? TokenStorage.getToken,
+      _base = (dotenv.env['API_BASE_URL'] ?? '').replaceAll(RegExp(r'/+$'), '');
 
   final String _base;
   final TokenProvider _getToken;
@@ -129,11 +136,9 @@ class UserProfileService {
       'Accept': 'application/json',
     };
 
-
-
-    final res = await http.get(uri, headers: headers).timeout(const Duration(seconds: 20));
-
-
+    final res = await http
+        .get(uri, headers: headers)
+        .timeout(const Duration(seconds: 20));
 
     if (res.statusCode != 200) {
       throw Exception('HTTP ${res.statusCode}: ${res.reasonPhrase}');
@@ -141,6 +146,7 @@ class UserProfileService {
 
     final json = jsonDecode(res.body) as Map<String, dynamic>;
     final data = UserProfileData.fromJson(json);
+    log('User: $json');
 
     if ((json['status'] ?? '').toString().toLowerCase() != 'success') {
       throw Exception('Failed to fetch profile');
@@ -162,18 +168,17 @@ class UserProfileService {
       throw StateError('Not authenticated. Missing token.');
     }
 
-    final uri = Uri.parse('$_base/get_bookmarked_products.php?page=$page&limit=$limit');
+    final uri = Uri.parse(
+      '$_base/get_bookmarked_products.php?page=$page&limit=$limit',
+    );
     final headers = <String, String>{
       'Authorization': 'Bearer $token',
       'Accept': 'application/json',
     };
 
-
-
-    final res = await http.get(uri, headers: headers).timeout(const Duration(seconds: 20));
-
-
-
+    final res = await http
+        .get(uri, headers: headers)
+        .timeout(const Duration(seconds: 20));
 
     if (res.statusCode != 200) {
       throw Exception('HTTP ${res.statusCode}: ${res.reasonPhrase}');
@@ -187,7 +192,6 @@ class UserProfileService {
     }
     return pageObj;
   }
-
 
   Future<void> removeBookmark(String productId) async {
     if (_base.isEmpty) {
@@ -205,13 +209,13 @@ class UserProfileService {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
     };
-    final body = jsonEncode({'product_id': int.tryParse(productId) ?? productId});
-
+    final body = jsonEncode({
+      'product_id': int.tryParse(productId) ?? productId,
+    });
 
     final res = await http
         .delete(uri, headers: headers, body: body)
         .timeout(const Duration(seconds: 20));
-
 
     if (res.statusCode != 200) {
       throw Exception('HTTP ${res.statusCode}: ${res.reasonPhrase}');
@@ -226,12 +230,11 @@ class UserProfileService {
     }
   }
 
-
-
   /// POST /upload_profile.php
   /// Returns the absolute URL of the uploaded profile image.
   Future<String> uploadProfileImage(File file) async {
-    if (_base.isEmpty) throw StateError('API_BASE_URL is empty. Check your .env.');
+    if (_base.isEmpty)
+      throw StateError('API_BASE_URL is empty. Check your .env.');
 
     final token = await _getToken();
     if (token == null || token.isEmpty) {
@@ -252,7 +255,8 @@ class UserProfileService {
           contentType: () {
             final p = file.path.toLowerCase();
             if (p.endsWith('.png')) return MediaType('image', 'png');
-            if (p.endsWith('.jpg') || p.endsWith('.jpeg')) return MediaType('image', 'jpeg');
+            if (p.endsWith('.jpg') || p.endsWith('.jpeg'))
+              return MediaType('image', 'jpeg');
             return MediaType('application', 'octet-stream');
           }(),
         ),
@@ -260,8 +264,6 @@ class UserProfileService {
 
     final streamed = await req.send().timeout(const Duration(seconds: 30));
     final res = await http.Response.fromStream(streamed);
-
-
 
     if (res.statusCode != 200) {
       throw Exception('HTTP ${res.statusCode}: ${res.reasonPhrase}');
@@ -274,8 +276,8 @@ class UserProfileService {
     }
 
     final url = (json['profile_image'] ?? '').toString().trim();
-    if (url.isEmpty) throw Exception('Upload succeeded but no image URL returned.');
+    if (url.isEmpty)
+      throw Exception('Upload succeeded but no image URL returned.');
     return url;
   }
-
 }

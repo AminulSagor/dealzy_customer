@@ -153,6 +153,21 @@ class Pagination {
   );
 }
 
+class CancelOrderResponse {
+  final String status;
+  final String message;
+
+  const CancelOrderResponse({required this.status, required this.message});
+
+  bool get isSuccess => status.toLowerCase() == 'success';
+
+  factory CancelOrderResponse.fromJson(Map<String, dynamic> j) =>
+      CancelOrderResponse(
+        status: (j['status'] ?? '').toString(),
+        message: (j['message'] ?? '').toString(),
+      );
+}
+
 /// ─────────────────────────────────────────
 /// 🟩 SERVICE CLASS
 /// ─────────────────────────────────────────
@@ -198,9 +213,9 @@ class GetCustomerOrdersService {
     }
 
     final json = jsonDecode(res.body);
-    final parsed = CustomerOrdersResponse.fromJson(testDATA);
-
-    ///TODO : should be json used testdata as API NOT WORKING.
+    final parsed = CustomerOrdersResponse.fromJson(
+      json,
+    ); //testData for testing.
 
     if (!parsed.isSuccess) {
       throw Exception('Failed to fetch orders.');
@@ -239,6 +254,47 @@ class GetCustomerOrdersService {
     }
 
     return json['code']?.toString();
+  }
+
+  Future<CancelOrderResponse> cancelOrderRequest(String orderId) async {
+    if (_base.isEmpty) {
+      throw StateError('API_BASE_URL is empty. Check your .env file.');
+    }
+
+    final token = await _getToken();
+    if (token == null || token.isEmpty) {
+      throw StateError('Not authenticated. Missing token.');
+    }
+
+    final uri = Uri.parse('$_base/cancel_order.php');
+    final headers = <String, String>{
+      'Authorization': 'Bearer $token',
+      'Accept': 'application/json',
+      'Content-Type': 'application/json',
+    };
+
+    final body = jsonEncode({'order_id': int.tryParse(orderId) ?? orderId});
+
+    final res = await http
+        .put(uri, headers: headers, body: body)
+        .timeout(const Duration(seconds: 20));
+
+    if (res.statusCode != 200) {
+      throw Exception('HTTP ${res.statusCode}: ${res.reasonPhrase}');
+    }
+
+    final jsonBody = jsonDecode(res.body) as Map<String, dynamic>;
+    final parsed = CancelOrderResponse.fromJson(jsonBody);
+
+    if (!parsed.isSuccess) {
+      // backend returned a non-success status
+      // pass message upstream so UI can display it
+      throw Exception(
+        parsed.message.isEmpty ? 'Failed to cancel order.' : parsed.message,
+      );
+    }
+
+    return parsed;
   }
 }
 

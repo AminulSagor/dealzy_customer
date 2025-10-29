@@ -5,11 +5,13 @@ import 'package:dealzy/widgets/login_required_dialog.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
 import '../routes/app_routes.dart';
+
 class OrderStatusItem {
   final String label;
   final String image;
   const OrderStatusItem(this.label, this.image);
 }
+
 class ProductItem {
   final String id;
   final String title;
@@ -25,8 +27,6 @@ class ProductItem {
     this.offerPrice,
   });
 
-
-
   factory ProductItem.fromBookmarked(BookmarkedProduct b) => ProductItem(
     id: b.productId,
     title: b.productName,
@@ -38,7 +38,7 @@ class ProductItem {
 
 class UserProfileController extends GetxController {
   UserProfileController({UserProfileService? service})
-      : _service = service ?? UserProfileService();
+    : _service = service ?? UserProfileService();
 
   final UserProfileService _service;
 
@@ -59,13 +59,10 @@ class UserProfileController extends GetxController {
   final isLoadingMore = false.obs;
   final isUploadingAvatar = false.obs;
 
-
   final coins = 0.obs;
 
   // ✅ Orders
   final RxList<OrderStatusItem> orders = <OrderStatusItem>[].obs;
-
-
 
   // Horizontal list scroll controller for pagination
   final ScrollController collectionCtrl = ScrollController();
@@ -77,7 +74,6 @@ class UserProfileController extends GetxController {
     fetchFirstPage();
     collectionCtrl.addListener(_onCollectionScroll);
     loadOrders();
-    coins.value = 320;
   }
 
   @override
@@ -86,6 +82,7 @@ class UserProfileController extends GetxController {
     collectionCtrl.dispose();
     super.onClose();
   }
+
   void loadOrders() {
     orders.assignAll([
       const OrderStatusItem('Pending', 'assets/png/oder/pending.png'),
@@ -93,6 +90,7 @@ class UserProfileController extends GetxController {
       const OrderStatusItem('Delivered', 'assets/png/oder/delivered.png'),
     ]);
   }
+
   void _onCollectionScroll() {
     if (!collectionCtrl.hasClients) return;
     final pos = collectionCtrl.position;
@@ -118,6 +116,8 @@ class UserProfileController extends GetxController {
       if (p.imagePath.trim().isNotEmpty) {
         avatar.value = p.imagePath; // network image
       }
+
+      coins.value = p.coins;
     } on StateError catch (e) {
       // Missing token or base URL; surface login dialog for auth case
       if (e.message.contains('Missing token')) {
@@ -161,8 +161,10 @@ class UserProfileController extends GetxController {
     isLoadingMore.value = true;
     try {
       final next = currentPage.value + 1;
-      final res =
-      await _service.fetchBookmarkedProducts(page: next, limit: pageSize.value);
+      final res = await _service.fetchBookmarkedProducts(
+        page: next,
+        limit: pageSize.value,
+      );
       currentPage.value = res.currentPage;
       totalPages.value = res.totalPages;
 
@@ -182,8 +184,8 @@ class UserProfileController extends GetxController {
       // Gallery; compress to keep payload small
       final picked = await picker.pickImage(
         source: ImageSource.gallery,
-        maxWidth: 1200,         // keep good quality, smaller file
-        imageQuality: 85,       // JPEG compression on Android/iOS
+        maxWidth: 1200, // keep good quality, smaller file
+        imageQuality: 85, // JPEG compression on Android/iOS
       );
       if (picked == null) return;
 
@@ -197,7 +199,12 @@ class UserProfileController extends GetxController {
           children: const [
             Icon(Icons.check_circle, color: Colors.white, size: 18),
             SizedBox(width: 8),
-            Expanded(child: Text('Profile picture updated', style: TextStyle(color: Colors.white))),
+            Expanded(
+              child: Text(
+                'Profile picture updated',
+                style: TextStyle(color: Colors.white),
+              ),
+            ),
           ],
         ),
         snackPosition: SnackPosition.BOTTOM,
@@ -208,12 +215,20 @@ class UserProfileController extends GetxController {
       if (e.message.contains('Missing token')) {
         Get.dialog(const LoginRequiredDialog(), barrierDismissible: false);
       } else {
-        Get.snackbar('Upload failed', e.message,
-            snackPosition: SnackPosition.BOTTOM, backgroundColor: Colors.red.shade200);
+        Get.snackbar(
+          'Upload failed',
+          e.message,
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red.shade200,
+        );
       }
     } catch (e) {
-      Get.snackbar('Upload failed', e.toString(),
-          snackPosition: SnackPosition.BOTTOM, backgroundColor: Colors.red.shade200);
+      Get.snackbar(
+        'Upload failed',
+        e.toString(),
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red.shade200,
+      );
     } finally {
       isUploadingAvatar.value = false;
     }
@@ -222,7 +237,6 @@ class UserProfileController extends GetxController {
   void openSettings() {
     Get.toNamed(AppRoutes.appSetting);
   }
-
 
   void openProduct(ProductItem p) {
     Get.toNamed('/product-details', parameters: {'id': p.id});
@@ -240,8 +254,12 @@ class UserProfileController extends GetxController {
           children: [
             const Icon(Icons.check_circle, color: Colors.white, size: 18),
             const SizedBox(width: 8),
-            Expanded(child: Text('Removed “${p.title}”', style: const TextStyle(color: Colors.white))),
-
+            Expanded(
+              child: Text(
+                'Removed “${p.title}”',
+                style: const TextStyle(color: Colors.white),
+              ),
+            ),
           ],
         ),
         snackPosition: SnackPosition.BOTTOM,
@@ -252,15 +270,20 @@ class UserProfileController extends GetxController {
       if (e.message.contains('Missing token')) {
         Get.dialog(const LoginRequiredDialog(), barrierDismissible: false);
       } else {
-        Get.snackbar('Error', e.message,
-            snackPosition: SnackPosition.BOTTOM,
-            backgroundColor: Colors.red.shade200);
+        Get.snackbar(
+          'Error',
+          e.message,
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red.shade200,
+        );
       }
     } catch (e) {
-      Get.snackbar('Error', e.toString(),
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.red.shade200);
+      Get.snackbar(
+        'Error',
+        e.toString(),
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red.shade200,
+      );
     }
   }
-
 }
