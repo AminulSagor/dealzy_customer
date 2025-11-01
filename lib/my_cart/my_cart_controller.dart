@@ -1,12 +1,15 @@
+import 'package:dealzy/my_cart/product_options_service.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../routes/app_routes.dart';
 import 'get_carts_service.dart';
 
 enum CartRowState { normal, deleting, success, error }
 
 class MyCartController extends GetxController {
   final GetCartsService _cartService = GetCartsService();
+  final ProductOptionsService _productOptionsService = ProductOptionsService();
 
   /// ✅ Observables
   final RxBool isLoading = false.obs;
@@ -15,6 +18,7 @@ class MyCartController extends GetxController {
   final Rxn<SellerInfo> seller = Rxn<SellerInfo>();
 
   final RxBool isOptionsLoading = false.obs;
+  final RxBool isCheckoutLoading = false.obs;
 
   ///temp for coin
   Map<String, int> coinData = {};
@@ -63,8 +67,10 @@ class MyCartController extends GetxController {
   Future<void> fetchColorsAndVariants(String productId, int index) async {
     try {
       isOptionsLoading.value = true;
-      final colors = await _cartService.getProductColors(productId);
-      final variants = await _cartService.getProductVariants(productId);
+      final colors = await _productOptionsService.getProductColors(productId);
+      final variants = await _productOptionsService.getProductVariants(
+        productId,
+      );
 
       items[index].colors = colors;
       items[index].variants = variants;
@@ -79,15 +85,8 @@ class MyCartController extends GetxController {
       } else {
         items[index].selectedVariant.value = null;
       }
-
-      debugPrint(
-        '✅ ${items[index].productName} | ${items[index].productId} => ${colors.length} colors, ${variants.length} variants',
-      );
     } catch (e) {
       isOptionsLoading.value = false;
-      debugPrint(
-        '⚠️ Error fetching extras for ${items[index].productName}: $e',
-      );
     } finally {
       isOptionsLoading.value = false;
     }
@@ -96,9 +95,30 @@ class MyCartController extends GetxController {
   /// ✅ Scroll listener (optional lazy load)
   void _onScroll() {
     if (scrollController.position.pixels >=
-        scrollController.position.maxScrollExtent - 100) {
-      debugPrint("🔽 Reached bottom of cart list");
+        scrollController.position.maxScrollExtent - 100) {}
+  }
+
+  void onCheckout() async {
+    List<CartItem>? selectedItems;
+    isCheckoutLoading.value = true;
+
+    for (int i = 0; i < items.length; i++) {
+      if (items[i].isSelected.value) {
+        selectedItems ??= [];
+        if (items[i].selectedColor.value == null ||
+            items[i].selectedVariant.value == null) {
+          await fetchColorsAndVariants(items[i].productId, i);
+        }
+        selectedItems.add(items[i]);
+      }
     }
+
+    isCheckoutLoading.value = false;
+
+    Get.toNamed(
+      AppRoutes.orderConfirmation,
+      arguments: {'items': selectedItems, 'coinData': coinData},
+    );
   }
 
   /// ✅ Selection controls

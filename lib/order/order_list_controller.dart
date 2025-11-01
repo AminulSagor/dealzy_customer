@@ -118,16 +118,14 @@ class OrderListController extends GetxController {
     try {
       final res = await _service.cancelOrderRequest(orderId);
 
-      // If success, remove it (or mark it as cancelled, up to you)
+      // If success, remove it
       if (res.isSuccess) {
         // remove order with that ID from sellers list
         for (final seller in sellers) {
           seller.orders.removeWhere((o) => o.orderId == orderId);
         }
 
-        // Optionally: trigger a tiny toast/snackbar if you still want visual feedback
-        // (You said earlier you like inline UI, so you may skip)
-        // Get.snackbar("Request Sent", res.message);
+        fetchOrders();
       }
     } catch (e) {
       // handle failure UI however you like

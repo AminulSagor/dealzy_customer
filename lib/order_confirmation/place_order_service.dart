@@ -91,19 +91,6 @@ class PlaceOrderService {
       if (notes != null && notes.trim().isNotEmpty) 'notes': notes.trim(),
       'items': items.map((e) => e.toJson()).toList(),
     };
-    body = {
-      'items': [
-        {
-          'cart_id': 48,
-          'quantity': 1,
-          'rate': 3.0,
-          "color_id": 0,
-          "variant_id": 0,
-        },
-      ],
-    };
-
-    print('body: $body');
 
     final res = await http
         .post(uri, headers: headers, body: jsonEncode(body))
@@ -123,5 +110,40 @@ class PlaceOrderService {
     }
 
     return parsed;
+  }
+
+  Future<String?> createPaymentIntent(String amount, String currency) async {
+    // Your backend URL
+    try {
+      if (_base.isEmpty) {
+        throw StateError('API_BASE_URL is empty. Check your .env file.');
+      }
+
+      final token = await _getToken();
+      if (token == null || token.isEmpty) {
+        throw StateError('Not authenticated. Missing token.');
+      }
+
+      final uri = Uri.parse('$_base/get_payment_intent.php');
+      final headers = {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      };
+
+      var body = {'amount': amount, 'currency': currency};
+
+      final res = await http
+          .post(uri, headers: headers, body: jsonEncode(body))
+          .timeout(const Duration(seconds: 20));
+
+      if (res.statusCode == 200) {
+        final jsonResponse = jsonDecode(res.body);
+        return jsonResponse['client_secret'];
+      }
+      return null;
+    } catch (e) {
+      return null;
+    }
   }
 }

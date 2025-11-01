@@ -8,7 +8,7 @@ import 'package:dealzy/storage/token_storage.dart';
 typedef TokenProvider = Future<String?> Function();
 
 /// ─────────────────────────────────────────
-/// 🟩 MODELS
+/// 🟩 MODELS (Cart-related)
 /// ─────────────────────────────────────────
 
 class ProductColor {
@@ -51,7 +51,7 @@ class CartItem {
   RxBool isSelected = false.obs;
   RxInt quantity = 1.obs;
 
-  /// Available options
+  /// Available options (will be filled by ProductOptionsService)
   List<ProductColor> colors = [];
   List<ProductVariant> variants = [];
 
@@ -152,7 +152,7 @@ class GetCartResponse {
 }
 
 /// ─────────────────────────────────────────
-/// 🟦 SERVICE CLASS
+/// 🟦 SERVICE: Cart fetch / delete
 /// ─────────────────────────────────────────
 
 class GetCartsService {
@@ -163,7 +163,7 @@ class GetCartsService {
   final String _base;
   final TokenProvider _getToken;
 
-  /// Fetch cart
+  /// GET /get_carts.php
   Future<GetCartResponse> getCarts() async {
     if (_base.isEmpty) {
       throw StateError('API_BASE_URL is empty. Check your .env.');
@@ -188,8 +188,8 @@ class GetCartsService {
       throw Exception('HTTP ${res.statusCode}: ${res.reasonPhrase}');
     }
 
-    final json = jsonDecode(res.body) as Map<String, dynamic>;
-    final parsed = GetCartResponse.fromJson(json);
+    final jsonMap = jsonDecode(res.body) as Map<String, dynamic>;
+    final parsed = GetCartResponse.fromJson(jsonMap);
 
     if (!parsed.isSuccess) {
       throw Exception('Failed to load cart details.');
@@ -198,61 +198,7 @@ class GetCartsService {
     return parsed;
   }
 
-  /// Fetch product colors
-  Future<List<ProductColor>> getProductColors(String productId) async {
-    final token = await _getToken();
-    final uri = Uri.parse(
-      '$_base/get_product_colors.php?product_id=$productId',
-    );
-    final headers = {
-      'Authorization': 'Bearer $token',
-      'Accept': 'application/json',
-    };
-
-    final res = await http
-        .get(uri, headers: headers)
-        .timeout(const Duration(seconds: 15));
-    if (res.statusCode != 200) throw Exception('Failed to load colors');
-
-    final json = jsonDecode(res.body) as Map<String, dynamic>;
-    print(json);
-    if (json['status']?.toString().toLowerCase() != 'success') return [];
-
-    final list = (json['colors'] as List<dynamic>? ?? [])
-        .map((e) => ProductColor.fromJson(e))
-        .toList();
-
-    return list;
-  }
-
-  /// Fetch product variants
-  Future<List<ProductVariant>> getProductVariants(String productId) async {
-    final token = await _getToken();
-    final uri = Uri.parse(
-      '$_base/get_product_variants.php?product_id=$productId',
-    );
-    final headers = {
-      'Authorization': 'Bearer $token',
-      'Accept': 'application/json',
-    };
-
-    final res = await http
-        .get(uri, headers: headers)
-        .timeout(const Duration(seconds: 15));
-    if (res.statusCode != 200) throw Exception('Failed to load variants');
-
-    final json = jsonDecode(res.body) as Map<String, dynamic>;
-    print(json);
-    if (json['status']?.toString().toLowerCase() != 'success') return [];
-
-    final list = (json['variants'] as List<dynamic>? ?? [])
-        .map((e) => ProductVariant.fromJson(e))
-        .toList();
-
-    return list;
-  }
-
-  /// DELETE CART ITEM
+  /// DELETE /delete_cart.php
   Future<bool> deleteCartItem(String cartId) async {
     if (_base.isEmpty) {
       throw StateError('API_BASE_URL is empty. Check your .env.');
@@ -264,7 +210,6 @@ class GetCartsService {
     }
 
     final uri = Uri.parse('$_base/delete_cart.php');
-
     final headers = {
       'Authorization': 'Bearer $token',
       'Accept': 'application/json',
@@ -280,16 +225,12 @@ class GetCartsService {
       throw Exception('HTTP ${res.statusCode}: ${res.reasonPhrase}');
     }
 
-    final json = jsonDecode(res.body);
-    final status = json['status']?.toString().toLowerCase() ?? '';
+    final jsonMap = jsonDecode(res.body) as Map<String, dynamic>;
+    final status = (jsonMap['status'] ?? '').toString().toLowerCase();
 
     if (status == 'success') {
-      debugPrint('✅ Cart item deleted successfully (cart_id: $cartId)');
       return true;
     } else {
-      debugPrint(
-        '⚠️ Failed to delete cart item (cart_id: $cartId): ${json['message']}',
-      );
       return false;
     }
   }

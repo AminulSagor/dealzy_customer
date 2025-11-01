@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
-import '../routes/app_routes.dart';
 import '../widgets/app_bottom_nav.dart';
 import 'get_carts_service.dart';
 import 'my_cart_controller.dart';
@@ -30,31 +29,22 @@ class MyCartView extends GetView<MyCartController> {
         final selectedCount = controller.selectedCount;
         final isActive = selectedCount > 0;
         return FloatingActionButton.extended(
-          onPressed: isActive
-              ? () {
-                  final selectedItems = controller.items
-                      .where((e) => e.isSelected.value)
-                      .toList();
-                  Get.toNamed(
-                    AppRoutes.orderConfirmation,
-                    arguments: {
-                      'items': selectedItems,
-                      'coinData': controller.coinData,
-                    },
-                  );
-                }
+          onPressed: isActive && !controller.isCheckoutLoading.value
+              ? controller.onCheckout
               : null,
-          backgroundColor: isActive
+          backgroundColor: isActive && !controller.isCheckoutLoading.value
               ? const Color(0xFF124A89)
               : Colors.grey.shade400,
-          label: Text(
-            isActive ? "Checkout ($selectedCount)" : "Checkout",
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 14.sp,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
+          label: controller.isCheckoutLoading.value
+              ? _loader(width: 18.w, height: 18.h, color: Colors.transparent)
+              : Text(
+                  isActive ? "Checkout ($selectedCount)" : "Checkout",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 14.sp,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
         );
       }),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
@@ -201,9 +191,9 @@ class MyCartView extends GetView<MyCartController> {
   }
 }
 
-Widget _loader({double? width, double? height}) {
+Widget _loader({double? width, double? height, Color? color}) {
   return Container(
-    color: Colors.white.withOpacity(0.7),
+    color: color ?? Colors.white.withOpacity(0.7),
     child: Center(
       child: SizedBox(
         width: width ?? 45.w,

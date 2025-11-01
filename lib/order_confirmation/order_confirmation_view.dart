@@ -318,7 +318,9 @@ class OrderConfirmationView extends GetView<OrderConfirmationController> {
               ElevatedButton.icon(
                 icon: const Icon(Icons.payment),
                 label: Text('Pay Now'),
-                onPressed: controller.proceedToStripe,
+                onPressed: () => controller.proceedToStripe(
+                  amount: (controller.total * 100).toInt().toString(),
+                ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.blue.shade700,
                   foregroundColor: Colors.white,
@@ -329,26 +331,25 @@ class OrderConfirmationView extends GetView<OrderConfirmationController> {
                 ),
               ),
 
-              const SizedBox(height: 12),
+              // const SizedBox(height: 12),
 
-              // 3. Alternative/Other Payment Option
-              OutlinedButton.icon(
-                icon: const Icon(Icons.access_time),
-                label: const Text('Pay Later'),
-                onPressed: () {
-                  Get.back();
-                  controller.onConfirmOrder();
-                },
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.blue.shade700,
-                  side: BorderSide(color: Colors.blue.shade700),
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-              ),
-
+              // // 3. Alternative/Other Payment Option
+              // OutlinedButton.icon(
+              //   icon: const Icon(Icons.access_time),
+              //   label: const Text('Pay Later'),
+              //   onPressed: () {
+              //     Get.back();
+              //     controller.onConfirmOrder();
+              //   },
+              //   style: OutlinedButton.styleFrom(
+              //     foregroundColor: Colors.blue.shade700,
+              //     side: BorderSide(color: Colors.blue.shade700),
+              //     padding: const EdgeInsets.symmetric(vertical: 16),
+              //     shape: RoundedRectangleBorder(
+              //       borderRadius: BorderRadius.circular(10),
+              //     ),
+              //   ),
+              // ),
               const SizedBox(height: 16),
             ],
           ),

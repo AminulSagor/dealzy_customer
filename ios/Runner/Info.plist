@@ -27,6 +27,12 @@
 
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	
+	<!-- Stripe permission -->
+	<key>NSCameraUsageDescription</key>
+	<string>Scan your card to add it automatically</string>
+	<key>NSCameraUsageDescription</key>
+	<string>To scan cards</string>
 
 	<!-- Permissions -->
 	<key>NSLocationWhenInUseUsageDescription</key>

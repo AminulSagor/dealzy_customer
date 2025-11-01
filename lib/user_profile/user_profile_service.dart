@@ -146,7 +146,6 @@ class UserProfileService {
 
     final json = jsonDecode(res.body) as Map<String, dynamic>;
     final data = UserProfileData.fromJson(json);
-    log('User: $json');
 
     if ((json['status'] ?? '').toString().toLowerCase() != 'success') {
       throw Exception('Failed to fetch profile');

@@ -1,6 +1,9 @@
+import 'dart:developer';
+
 import 'package:dealzy/routes/app_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:get/get.dart';
 import '../my_cart/get_carts_service.dart';
 import 'get_discount_service.dart';
@@ -184,16 +187,46 @@ class OrderConfirmationController extends GetxController {
     usedCoins.value = 0;
   }
 
-  void proceedToStripe() {
-    Get.snackbar("Stripe", "Redirecting to payment...");
+  Future<void> proceedToStripe({required String amount}) async {
+    Get.back();
+    try {
+      // 1. Get client secret from your backend
+      final clientSecret = await _orderService.createPaymentIntent(
+        amount,
+        'gbp',
+      );
+      if (clientSecret == null) return;
+
+      // 2. Initialize Payment Sheet
+      await Stripe.instance.initPaymentSheet(
+        paymentSheetParameters: SetupPaymentSheetParameters(
+          paymentIntentClientSecret: clientSecret,
+          merchantDisplayName: 'DealzyLoop LTD',
+          // Optional: for pre-filling user information
+          // customerId: 'customer_id',
+          // customerEphemeralKeySecret: 'ephemeral_key',
+        ),
+      );
+
+      // 3. Present Payment Sheet
+      await Stripe.instance.presentPaymentSheet();
+
+      // You should also verify payment status on your backend using webhooks!
+
+      // recording place order on server
+      onConfirmOrder();
+    } on StripeException catch (e) {
+      Get.snackbar('Stripe Error', e.error.code.toString());
+      // Handle specific Stripe exceptions
+    } catch (e) {
+      Get.snackbar('General Error', e.toString());
+      // Handle other exceptions
+    }
   }
 
   void onGoOrders() {
-    Get.offNamedUntil(
-      AppRoutes.orderList,
-      arguments: {'status': 'Pending'},
-      (route) => route.settings.name == AppRoutes.home,
-    );
+    Get.offAllNamed(AppRoutes.home);
+    Get.toNamed(AppRoutes.orderList, arguments: {'status': 'Pending'});
   }
 
   void onGoHome() {

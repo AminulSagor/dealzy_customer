@@ -1,6 +1,6 @@
 // lib/services/category_products_service.dart
 import 'dart:convert';
-import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
+// import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 
@@ -82,7 +82,7 @@ class CategoryProductsPage {
 
 class CategoryProductsService {
   CategoryProductsService()
-      : _base = (dotenv.env['API_BASE_URL'] ?? '').replaceAll(RegExp(r'/+$'), '');
+    : _base = (dotenv.env['API_BASE_URL'] ?? '').replaceAll(RegExp(r'/+$'), '');
 
   final String _base;
 
@@ -114,7 +114,9 @@ class CategoryProductsService {
 
     final headers = await _buildHeaders();
 
-    final res = await http.get(uri, headers: headers).timeout(const Duration(seconds: 20));
+    final res = await http
+        .get(uri, headers: headers)
+        .timeout(const Duration(seconds: 20));
 
     if (res.statusCode != 200) {
       throw Exception('HTTP ${res.statusCode}: ${res.reasonPhrase}');
@@ -155,16 +157,18 @@ class CategoryProductsService {
 
     final headers = await _buildHeaders();
 
-    if (kDebugMode) debugPrint('⇢ GET $uri');
-    final res = await http.get(uri, headers: headers).timeout(const Duration(seconds: 20));
-    if (kDebugMode) {
-      debugPrint('⇠ ${res.statusCode} ${res.reasonPhrase}');
-      try {
-        debugPrint(const JsonEncoder.withIndent('  ').convert(jsonDecode(res.body)));
-      } catch (_) {
-        debugPrint(res.body);
-      }
-    }
+    // if (kDebugMode) debugPrint('⇢ GET $uri');
+    final res = await http
+        .get(uri, headers: headers)
+        .timeout(const Duration(seconds: 20));
+    // if (kDebugMode) {
+    //   debugPrint('⇠ ${res.statusCode} ${res.reasonPhrase}');
+    //   try {
+    //     debugPrint(const JsonEncoder.withIndent('  ').convert(jsonDecode(res.body)));
+    //   } catch (_) {
+    //     debugPrint(res.body);
+    //   }
+    // }
 
     if (res.statusCode != 200) {
       throw Exception('HTTP ${res.statusCode}: ${res.reasonPhrase}');

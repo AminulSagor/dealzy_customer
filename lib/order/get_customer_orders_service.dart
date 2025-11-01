@@ -213,9 +213,7 @@ class GetCustomerOrdersService {
     }
 
     final json = jsonDecode(res.body);
-    final parsed = CustomerOrdersResponse.fromJson(
-      json,
-    ); //testData for testing.
+    final parsed = CustomerOrdersResponse.fromJson(json);
 
     if (!parsed.isSuccess) {
       throw Exception('Failed to fetch orders.');
@@ -297,93 +295,3 @@ class GetCustomerOrdersService {
     return parsed;
   }
 }
-
-final testDATA = {
-  "status": "success",
-  "pagination": {
-    "current_page": 1,
-    "per_page": 10,
-    "total_orders": 2,
-    "total_pages": 1,
-  },
-  "orders_grouped_by_sellers": [
-    {
-      "seller_id": "23",
-      "store_name": "new_enterprise",
-      "store_type": "Retail",
-      "address": "Any address",
-      "lattitude": "51.501010",
-      "longtitude": "-0.141563",
-      "pro_path":
-          "https://dealzyloop.com/api/upload/profiles/profile_68d4270969ef14.98874523.jpg",
-      "orders": [
-        {
-          "order_id": "3",
-          "status": "pending",
-          "created_at": "2025-10-24 14:55:49",
-          "items": [
-            {
-              "product_id": "37",
-              "product_name": "Cucumber -1KG",
-              "brand": "",
-              "model": "",
-              "quantity": 2,
-              "rate": 1200,
-              "color": "White",
-              "variant": "Apple",
-              "image_path":
-                  "https://dealzyloop.com/api/upload/products/product_68d4272c935d75.07158427.jpg",
-            },
-            {
-              "product_id": "39",
-              "product_name": "Samsung  Galaxy S25",
-              "brand": "Samsung",
-              "model": "Galaxy S25",
-              "quantity": 1,
-              "rate": 2500,
-              "color": "Black",
-              "variant": "128GB",
-              "image_path":
-                  "https://dealzyloop.com/api/upload/products/product_68d4285e200479.78039190.png",
-            },
-          ],
-          "subtotal": 4900,
-          "discount": 50,
-        },
-        {
-          "order_id": "4",
-          "status": "pending",
-          "created_at": "2025-10-24 17:10:48",
-          "items": [
-            {
-              "product_id": "39",
-              "product_name": "Samsung  Galaxy S25",
-              "brand": "Samsung",
-              "model": "Galaxy S25",
-              "quantity": 1,
-              "rate": 2500,
-              "color": "Black",
-              "variant": "128GB",
-              "image_path":
-                  "https://dealzyloop.com/api/upload/products/product_68d4285e200479.78039190.png",
-            },
-            {
-              "product_id": "37",
-              "product_name": "Cucumber -1KG",
-              "brand": "",
-              "model": "",
-              "quantity": 2,
-              "rate": 1200,
-              "color": "White",
-              "variant": "Apple",
-              "image_path":
-                  "https://dealzyloop.com/api/upload/products/product_68d4272c935d75.07158427.jpg",
-            },
-          ],
-          "subtotal": 4900,
-          "discount": 50,
-        },
-      ],
-    },
-  ],
-};
